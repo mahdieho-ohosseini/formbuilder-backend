@@ -1,58 +1,64 @@
-from typing import Generator
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from sqlalchemy_utils import database_exists, create_database
+from typing import AsyncGenerator
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession
+)
+from sqlalchemy.orm import declarative_base
 from loguru import logger
+from sqlalchemy import text
+
+
 from services.iam_service.app.core.config import get_settings
 
 config = get_settings()
 
-# Generate Database URL
+# ساخت URL مخصوص asyncpg
 DATABASE_URL = (
-    f"{config.DATABASE_DIALECT}://"
-    f"{config.DATABASE_USERNAME}:"
-    f"{config.DATABASE_PASSWORD}@"
-    f"{config.DATABASE_HOSTNAME}:"
-    f"{config.DATABASE_PORT}/"
-    f"{config.DATABASE_NAME}"
+    f"postgresql+asyncpg://{config.DATABASE_USERNAME}:"
+    f"{config.DATABASE_PASSWORD}@{config.DATABASE_HOSTNAME}:"
+    f"{config.DATABASE_PORT}/{config.DATABASE_NAME}"
 )
 
-engine = create_engine(DATABASE_URL, echo=config.DEBUG_MODE, future=True) #۱) اتصال به دیتابیس
+# ساخت async engine
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=config.DEBUG_MODE,
+    future=True
+)
 
-EntityBase = declarative_base() #تمام مدل‌های دیتابیس باید از این Base ارث‌ ببرند
+# Session factory
+async_session = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
+    class_=AsyncSession
+)
 
-
-def init_db() -> bool:
-    EntityBase.metadata.create_all(bind=engine)#دیتابیس و جدول‌ها را می‌سازد
-    logger.info("Database Initialized")
-    return True
-
-
-try:
-    if not database_exists(engine.url):
-        logger.info("Creating Database")
-        create_database(engine.url)
-        logger.info("Database Created")
-
-except Exception as e:
-    logger.error(f"Error: {e}")
-
-session_local = sessionmaker(autoflush=False, autocommit=False, bind=engine)
-logger.info("Database Session Created")
+# Base برای تمام مدل‌های دیتابیس
+EntityBase = declarative_base()
 
 
-def get_entitybase():
-    return EntityBase
-
-
-def get_db() -> Generator[Session, None, None]:# Session برای هر درخواست HTTP می‌سازد (get_db)
-    db = session_local()
+# Dependency برای FastAPI
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session() as session:
+        try:
+            yield session
+        except Exception as ex:
+            logger.error(f"DB error: {ex}")
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+# ================================================
+# Database Health Check
+# ================================================
+async def db_health_check() -> bool:
     try:
-        yield db
-    except SQLAlchemyError as ex:
-        logger.error(f"Database error during session: {ex}")
-        db.rollback()  
-        raise  
-    finally:
-        db.close()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return True
+    except Exception as ex:
+        logger.error(f"[DB Health] Connection Error: {ex}")
+        return False
