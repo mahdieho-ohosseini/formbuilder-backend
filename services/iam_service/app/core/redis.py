@@ -7,12 +7,12 @@ from services.iam_service.app.core.config import get_settings
 
 config = get_settings()
 
-redis_client: Optional[Redis] = None
+redis_client: Optional[Redis] = None #فقط یک Redis client ساخته شود
 
 
 async def get_redis() -> Redis:
     """
-    Singleton async Redis client.
+    creat redis
     """
     global redis_client
     if redis_client is None:
