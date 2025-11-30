@@ -4,4 +4,4 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, EmailStr
 
-from app.domain.schemas.token_schema import TokenSchema
+from app.domain.token_schema import TokenSchema
