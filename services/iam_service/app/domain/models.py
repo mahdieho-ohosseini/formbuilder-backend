@@ -10,7 +10,7 @@ EntityBase = get_entitybase()
 class User(EntityBase):
     __tablename__ = "users"
 
-    id = Column(
+    user_id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         index=True,
