@@ -20,7 +20,7 @@ class UserLoginSchema(BaseModel):
 
 
 class UserResponseSchema(UserBaseSchema):
-    user_id: UUID
+    id: UUID
     role: str
     created_at: Optional[datetime]
     is_verified: bool
