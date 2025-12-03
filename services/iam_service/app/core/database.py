@@ -1,59 +1,49 @@
 from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import (
-    create_async_engine,
-    async_sessionmaker,
-    AsyncSession
-)
-from sqlalchemy.orm import declarative_base
-from loguru import logger
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
-
-
+from loguru import logger
 from services.iam_service.app.core.config import get_settings
+from services.iam_service.app.core.base import EntityBase
+
 
 config = get_settings()
 
-# ساخت URL مخصوص asyncpg
 DATABASE_URL = (
     f"postgresql+asyncpg://{config.DATABASE_USERNAME}:"
-    f"{config.DATABASE_PASSWORD}@{config.DATABASE_HOSTNAME}:"
-    f"{config.DATABASE_PORT}/{config.DATABASE_NAME}"
+    f"{config.DATABASE_PASSWORD}@"
+    f"{config.DATABASE_HOSTNAME}:"
+    f"{config.DATABASE_PORT}/"
+    f"{config.DATABASE_NAME}"
 )
 
-# ساخت async engine
 engine = create_async_engine(
     DATABASE_URL,
     echo=config.DEBUG_MODE,
     future=True
 )
 
-# Session factory
 async_session = async_sessionmaker(
     bind=engine,
-    expire_on_commit=False,
     autoflush=False,
     autocommit=False,
+    expire_on_commit=False,
     class_=AsyncSession
 )
 
-# Base برای تمام مدل‌های دیتابیس
-EntityBase = declarative_base()
 
 
-# Dependency برای FastAPI
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
-        try:
-            yield session
-        except Exception as ex:
-            logger.error(f"DB error: {ex}")
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-# ================================================
-# Database Health Check
-# ================================================
+    session = async_session()
+    try:
+        yield session
+    except Exception as ex:
+        logger.error(f"DB error: {ex}")
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
 async def db_health_check() -> bool:
     try:
         async with engine.connect() as conn:
@@ -62,3 +52,22 @@ async def db_health_check() -> bool:
     except Exception as ex:
         logger.error(f"[DB Health] Connection Error: {ex}")
         return False
+
+print("TABLES =", EntityBase.metadata.tables)
+
+async def create_db_and_tables():
+    # This loads the model class so SQLAlchemy registers the table
+    from services.iam_service.app.domain.models import User
+
+    print("Registered tables:", EntityBase.metadata.tables.keys())
+
+    logger.info("Creating database tables...")
+    async with engine.begin() as conn:
+        await conn.run_sync(EntityBase.metadata.create_all)
+
+    logger.success("All tables created successfully!")
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(create_db_and_tables())
