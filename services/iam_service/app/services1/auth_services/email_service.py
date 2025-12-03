@@ -1,6 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
-from app.services1.base_service import BaseService
+from services.iam_service.app.services1.base_service import BaseService
 
 
 class EmailService(BaseService):

@@ -16,6 +16,15 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str
     DATABASE_PORT: int
     DATABASE_USERNAME: str
+    #Email service
+
+    EMAIL_FROM: str = "your@email.com"
+    EMAIL_HOST: str = "smtp.gmail.com"
+    EMAIL_PORT: int = 587
+    EMAIL_USERNAME: str = "your@gmail.com"
+    EMAIL_PASSWORD: str = "your app password"
+
+
 
     # Global settings
     DEBUG_MODE: bool

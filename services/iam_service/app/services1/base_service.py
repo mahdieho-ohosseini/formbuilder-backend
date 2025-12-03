@@ -1,5 +1,5 @@
 import logging
-from app.core.config import get_settings
+from services.iam_service.app.core.config import get_settings
 
 class BaseService:
     def __init__(self):
