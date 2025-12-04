@@ -61,6 +61,21 @@ class UserRepository:
         await self.session.execute(stmt)
         await self.session.commit()
 
+
+    async def update_full_name(self, user_id: UUID, full_name: str) -> None:
+        stmt = (
+            update(User)
+           .where(User.user_id == user_id)
+           .values(
+            full_name=full_name,
+            updated_at=datetime.utcnow()
+        )
+    )
+ 
+        await self.session.execute(stmt)
+        await self.session.commit()
+
+
     async def update_password(self, user_id: UUID, new_hash: str) -> None:
         stmt = (
             update(User)
@@ -121,12 +136,16 @@ class UserRepository:
         await self.session.delete(user)
         await self.session.commit()
         logger.info(f"User {user.user_id} deleted")
-
-
-    async def get_user(self, user_id: UUID) -> User:
-        stmt = select(User).where(User.user_id == user_id)
+    # -----------------------------------
+    # admin
+    # -----------------------------------
+    async def get_admin_user(self) -> User | None:
+        stmt = select(User).where(User.role == "admin")
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+
+
 # ---------------------------------------
 # DEPENDENCY (برای FastAPI)
 # ---------------------------------------
