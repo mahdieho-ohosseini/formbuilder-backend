@@ -22,6 +22,7 @@ class UserLoginSchema(BaseModel):
 class UserResponseSchema(UserBaseSchema):
     user_id: UUID
     role: str
+    last_login: Optional[datetime]
     created_at: Optional[datetime]
     is_verified: bool
 

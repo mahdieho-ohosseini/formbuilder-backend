@@ -54,6 +54,7 @@ class loginService(BaseService):
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        await self.user_service.update_last_login(existing_user.user_id)
 
         # 5) ساخت access_token
         access_token = self.jwt_service.create_access_token(

@@ -2,6 +2,7 @@ from typing import Annotated, Dict
 from uuid import UUID
 from loguru import logger
 from fastapi import Depends
+from datetime import datetime
 
 from app.domain.models import User
 from app.domain.user_schemas import UserCreateSchema
@@ -59,7 +60,11 @@ class UserService(BaseService):
     async def get_user_by_email(self, email: str) -> User:
         logger.info(f"Fetching user with email {email}")
         return await self.user_repository.get_by_email(email)
+    
 
+    async def update_last_login(self, user_id: UUID):
+        return await self.user_repository.update_last_login(user_id, {
+        "last_login": datetime.utcnow()})
 
 
 #--------------------------------------------------------------------------
