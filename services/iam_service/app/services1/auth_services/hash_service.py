@@ -1,8 +1,10 @@
 from passlib.context import CryptContext
 from app.services1.base_service import BaseService
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
 
 class HashService(BaseService):
     def __init__(self) -> None:

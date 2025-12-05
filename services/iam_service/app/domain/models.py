@@ -2,7 +2,7 @@ import uuid
 from sqlalchemy import Column, String, TIMESTAMP, Boolean, VARCHAR, text, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from services.iam_service.app.core.base import EntityBase
+from app.core.base import EntityBase
 
 
 class User(EntityBase):

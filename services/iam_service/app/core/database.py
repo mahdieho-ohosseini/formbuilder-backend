@@ -2,8 +2,8 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
 from loguru import logger
-from services.iam_service.app.core.config import get_settings
-from services.iam_service.app.core.base import EntityBase
+from app.core.config import get_settings
+from app.core.base import EntityBase
 
 
 config = get_settings()
@@ -57,7 +57,7 @@ print("TABLES =", EntityBase.metadata.tables)
 
 async def create_db_and_tables():
     # This loads the model class so SQLAlchemy registers the table
-    from services.iam_service.app.domain.models import User
+    from app.domain.models import User
 
     print("Registered tables:", EntityBase.metadata.tables.keys())
 

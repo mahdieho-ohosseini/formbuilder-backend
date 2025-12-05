@@ -1,7 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
 from loguru import logger
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from app.domain.models import User
 from app.domain.token_schemas import TokenSchema
 from app.domain.user_schemas import UserLoginSchema
@@ -10,12 +8,12 @@ from app.services1.base_service import BaseService
 from app.services1.user_service import UserService
 from app.services1.auth_services.jwt_service import JWTService
 
-class loginService(BaseService):
+class LoginService(BaseService):
     def __init__(
         self,
-        hash_service: Annotated[HashService, Depends()],
-        user_service: Annotated[UserService, Depends()],
-        jwt_service: Annotated[JWTService, Depends()],
+        hash_service: HashService,
+        user_service: UserService,
+        jwt_service: JWTService,
     ) -> None:
         super().__init__()
         self.user_service = user_service
@@ -54,6 +52,8 @@ class loginService(BaseService):
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        
+        # آپدیت آخرین ورود
         await self.user_service.update_last_login(existing_user.user_id)
 
         # 5) ساخت access_token

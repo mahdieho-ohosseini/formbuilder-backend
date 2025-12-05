@@ -4,12 +4,12 @@ from fastapi import Depends, HTTPException, status
 
 from app.domain.user_schemas import (
     UserCreateSchema,
-    UserResponseSchema,
-    UserCreateResponseSchema,
-    VerifyOTPSchema,
-    VerifyOTPResponseSchema,
+    RegisterStartResponse,
+    RegisterCompleteSchema,
+    RegisterCompleteResponse,
     ResendOTPSchema,
     ResendOTPResponseSchema,
+    UserResponseSchema
 )
 from app.services1.auth_services.otp_servise import OTPService
 from app.services1.base_service import BaseService
@@ -21,114 +21,94 @@ class RegisterService(BaseService):
         self,
         user_service: Annotated[UserService, Depends()],
         otp_service: Annotated[OTPService, Depends()],
+        redis_client
     ) -> None:
         super().__init__()
-
         self.user_service = user_service
         self.otp_service = otp_service
-        
+        self.redis = redis_client
 
-    # ============================================================
-    # Register user (Email-based)
-    # ============================================================
-    async def register_user(self, user: UserCreateSchema) -> UserCreateResponseSchema:
+    # ============================================
+    # Step 1 — Register (store in redis + send OTP)
+    # ============================================
+    async def register_user(self, user: UserCreateSchema) -> RegisterStartResponse:
 
-        # 1. Check duplicate email
+        # check duplicate user
         existing = await self.user_service.get_user_by_email(user.email)
         if existing:
-            logger.error(f"User with email {user.email} already exists")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=400,
                 detail="User already exists"
             )
 
-        # 2. Create user
-        new_user = await self.user_service.create_user(user)
-
-        # 3. Send OTP to email
-        otp = self.otp_service.send_otp(new_user.email)
-
-        logger.info(f"User with email {user.email} created successfully")
-
-        return UserCreateResponseSchema(
-            user=UserResponseSchema.from_orm(new_user),
-            OTP=otp,
-            message="User created successfully. OTP sent to email",
+        # store pending user in redis
+        await self.redis.setex(
+            f"pending_user:{user.email}",
+            300,
+            user.model_dump_json()
         )
 
-    # ============================================================
-    # Verify user using OTP (Email-based)
-    # ============================================================
-    async def verify_user(
-        self, verify_schema: VerifyOTPSchema
-    ) -> VerifyOTPResponseSchema:
+        otp = await self.otp_service.send_otp(user.email)
 
+        return RegisterStartResponse(
+            success=True,
+            message="OTP sent to email"
+        )
+
+    # ============================================
+    # Step 2 — Verify OTP + Create User
+    # ============================================
+    async def verify_user(self, verify_schema: RegisterCompleteSchema) -> RegisterCompleteResponse:
         email = verify_schema.email
+        otp = verify_schema.otp
 
-        # 1. Verify OTP
-        if not self.otp_service.verify_otp(email, verify_schema.OTP):
-            logger.error(f"Invalid OTP for email {email}")
+        # verify otp
+        result = await self.otp_service.verify_otp(email, otp)
+        if not result:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP"
+                status_code=400,
+                detail="Invalid or expired OTP"
             )
 
-        # 2. Find user
-        user = await self.user_service.get_user_by_email(email)
-        if not user:
+        # load pending user
+        raw = await self.redis.get(f"pending_user:{email}")
+        if not raw:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="User not found"
+                status_code=400,
+                detail="No pending registration found"
             )
 
-        # 3. Mark as verified
-        await self.user_service.update_user(
-            user.user_id, {"is_verified": True}
+        data = UserCreateSchema.model_validate_json(raw)
+
+        # create user now
+        new_user = await self.user_service.create_user(data)
+
+        # Delete pending
+        await self.redis.delete(f"pending_user:{email}")
+
+        return RegisterCompleteResponse(
+            success=True,
+            verified=True,
+            message="User created successfully",
+            user=UserResponseSchema.from_orm(new_user)
         )
 
-        logger.info(f"User with email {email} verified")
-
-        return VerifyOTPResponseSchema(
-            verified=True, message="User verified successfully"
-        )
-
-    # ============================================================
-    # Resend OTP (Email-based)
-    # ============================================================
-    async def resend_otp(
-        self, resend_schema: ResendOTPSchema
-    ) -> ResendOTPResponseSchema:
-
+    # ============================================
+    # Resend OTP
+    # ============================================
+    async def resend_otp(self, resend_schema: ResendOTPSchema) -> ResendOTPResponseSchema:
         email = resend_schema.email
 
-        user = await self.user_service.get_user_by_email(email)
-        if not user:
-            logger.error(f"User with email {email} does not exist")
+        otp_exists = await self.otp_service.check_exist(email)
+        if otp_exists:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="User does not exist"
+                status_code=400,
+                detail="OTP already sent"
             )
 
-        if user.is_verified:
-            logger.error(f"User with email {email} already verified")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="User already verified"
-            )
-
-        # If OTP already exists (not expired)
-        if self.otp_service.check_exist(email):
-            logger.error(f"OTP for email {email} already active")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="OTP already exists"
-            )
-
-        otp = self.otp_service.send_otp(email)
-
-        logger.info(f"OTP resent to email {email}")
+        await self.otp_service.send_otp(email)
 
         return ResendOTPResponseSchema(
-            email=email,
-            OTP=otp,
-            message="OTP sent to email",
+            success=True,
+            message="OTP resent"
         )

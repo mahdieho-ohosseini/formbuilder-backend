@@ -12,7 +12,6 @@ from app.services1.user_service import UserService
 from app.domain.models import User
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 class JWTService(BaseService):
@@ -21,6 +20,9 @@ class JWTService(BaseService):
         self.secret_key = self.settings.JWT_SECRET_KEY
         self.algorithm = self.settings.JWT_ALGORITHM
         self.exp_minutes = self.settings.ACCESS_TOKEN_EXPIRE_MINUTES
+
+        
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
     # ============================================================
     #  تابع اول: ساخت توکن

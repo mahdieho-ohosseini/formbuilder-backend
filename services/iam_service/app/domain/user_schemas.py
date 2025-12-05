@@ -1,60 +1,70 @@
+from pydantic import BaseModel, EmailStr
+from uuid import UUID
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
-from pydantic import BaseModel, Field, EmailStr
-from app.domain.token_schemas import TokenSchema
 
-
+# ======================================================
+# Base User Schemas
+# ======================================================
 
 class UserBaseSchema(BaseModel):
     full_name: str
-    email :EmailStr
+    email: EmailStr
+
 
 class UserCreateSchema(UserBaseSchema):
     password: str
 
 
 class UserLoginSchema(BaseModel):
-    email :EmailStr
+    email: EmailStr
     password: str
 
 
-class UserResponseSchema(UserBaseSchema):
+class UserResponseSchema(BaseModel):
     user_id: UUID
+    full_name: str
+    email: EmailStr
     role: str
-    last_login: Optional[datetime]
-    created_at: Optional[datetime]
+    last_login: Optional[datetime] = None
+    created_at: Optional[datetime] = None
     is_verified: bool
 
     class Config:
         from_attributes = True
 
 
-class VerifyOTPSchema(BaseModel):#ورودی کاربر
-    email :EmailStr 
-    OTP: str
+# ======================================================
+# OTP-Based Registration (Hybrid Architecture)
+# ======================================================
+
+# مرحله ۱ — فقط ارسال OTP
+class RegisterStartResponse(BaseModel):
+    success: bool
+    message: str
 
 
+# مرحله ۲ — تأیید OTP و ساخت کاربر
+class RegisterCompleteSchema(BaseModel):
+    email: EmailStr
+    otp: str   # مهم: otp با حروف کوچک
+
+
+class RegisterCompleteResponse(BaseModel):
+    success: bool
+    verified: bool
+    message: str
+    user: UserResponseSchema
+
+
+# ======================================================
+# Resend OTP
+# ======================================================
 
 class ResendOTPSchema(BaseModel):
-    email :EmailStr
+    email: EmailStr
 
 
 class ResendOTPResponseSchema(BaseModel):
-    message: str
     success: bool
-
-class VerifyOTPResponseSchema(BaseModel):#پاسخ موفقیت اعتبارسنجی بهه کاربر  خروچی تایید otp
-    verified: bool
     message: str
-
-
-class UserCreateResponseSchema(BaseModel):
-    user: UserResponseSchema
-    message: str
-    success: bool
-
-
-class UserLoginResponseSchema(BaseModel):
-    user: UserResponseSchema
-    access_token: TokenSchema

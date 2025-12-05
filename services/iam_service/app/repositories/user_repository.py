@@ -6,7 +6,7 @@ from loguru import logger
 from sqlalchemy import select, update ,delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.iam_service.app.domain.models import User
+from app.domain.models import User
 
 
 class UserRepository:

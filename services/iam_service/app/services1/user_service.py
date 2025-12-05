@@ -26,14 +26,14 @@ class UserService(BaseService):
     async def create_user(self, user_body: UserCreateSchema) -> User:
         logger.info(f"Creating user with email {user_body.email}")
 
-        hashed_password = self.hash_service.hash_password(user_body.password)
+        password_hash = self.hash_service.hash_password(user_body.password)
 
         user_model = User(
             full_name=user_body.full_name,
             email=user_body.email,
-            hashed_password=hashed_password,
+            password_hash=password_hash,
             role="creator",   # ← نقش پیش‌فرض
-            is_verified=False,   # چون نیاز به OTP دارد
+            is_verified=True,   # چون نیاز به OTP دارد
         )
 
         return await self.user_repository.create_user(user_model)

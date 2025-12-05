@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
+from contextlib import asynccontextmanager
 
 # ===================================================================
 # 1. Import local modules (Core, Config, Routes)
@@ -9,7 +10,7 @@ from loguru import logger
 # این مسیر بر اساس آخرین صحبت‌های ماست
 from app.api.auth_routes import auth_router
 from app.core.config import get_settings
-from app.core.database import init_db  # فرض بر اینکه این تابع برای راه‌اندازی اولیه است
+from app.core.database import create_db_and_tables
 from app.logging.logging_service import configure_logger
 
 # ===================================================================
@@ -20,16 +21,23 @@ configure_logger()
 logger.info("Logger configured.")
 
 # راه‌اندازی دیتابیس (نکته مهم در توضیحات پایین)
-# init_db()  # کامنت شد - در توضیحات بخون چرا
+
 logger.info("Database setup initiated (if applicable).")
 
 # دریافت تنظیمات از config
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_db_and_tables()
+    yield
+
 # ساخت اپلیکیشن FastAPI با اطلاعات تکمیلی برای مستندات
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
+    lifespan=lifespan , # این خط را اضافه کنید
     description="Identity and Access Management (IAM) Service for QForm"
 )
 logger.info(f"{settings.PROJECT_NAME} v{settings.PROJECT_VERSION} is starting up...")
@@ -56,6 +64,7 @@ logger.info("CORS middleware configured with allow_origins: {}", origins)
 # اضافه کردن روتر احراز هویت با یک پیشوند کلی برای تمام API های ورژن 1
 app.include_router(auth_router, prefix="/api/v1")
 logger.info("Included auth_router with prefix /api/v1")
+
 
 
 # ===================================================================
