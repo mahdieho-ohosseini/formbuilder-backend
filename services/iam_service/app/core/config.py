@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     EMAIL_PORT: int = 587
     EMAIL_USERNAME: str = "your@gmail.com"
     EMAIL_PASSWORD: str = "your app password"
-
-
+    # Project
+    PROJECT_NAME: str = "QForm IAM Service"
+    PROJECT_VERSION: str = "1.0.0"
 
     # Global settings
     DEBUG_MODE: bool
