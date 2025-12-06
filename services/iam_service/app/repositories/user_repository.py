@@ -53,13 +53,14 @@ class UserRepository:
     # UPDATE
     # -----------------------------------
     async def update_last_login(self, user_id: UUID) -> None:
-        stmt = (
-            update(User)
-            .where(User.user_id == user_id)
-            .values(last_login=datetime)
-        )
-        await self.session.execute(stmt)
-        await self.session.commit()
+      stmt = (
+         update(User)
+        .where(User.user_id == user_id)
+        .values(last_login=datetime.utcnow(),
+                updated_at=datetime.utcnow())
+         )
+      await self.session.execute(stmt)
+      await self.session.commit()
 
 
     async def update_full_name(self, user_id: UUID, full_name: str) -> None:

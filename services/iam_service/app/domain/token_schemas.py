@@ -5,8 +5,7 @@ from pydantic import BaseModel
 #آن چیزی که به کاربر می‌دهیم)
 class TokenSchema(BaseModel):#خروجیِ لاگین
     access_token: str
-    token_type: str
-    expires_in :int
+    token_type: str = "bearer"
 
 #برای decode کردن JWT و استخراج user_id
 class TokenDataSchema(BaseModel):

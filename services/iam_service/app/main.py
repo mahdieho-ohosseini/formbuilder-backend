@@ -1,51 +1,90 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from loguru import logger
 from contextlib import asynccontextmanager
 
-# ===================================================================
-# 1. Import local modules (Core, Config, Routes)
-# ===================================================================
-# مسیر ایمپورت auth_router را با ساختار پروژه خودت تطبیق بده
-# این مسیر بر اساس آخرین صحبت‌های ماست
 from app.api.auth_routes import auth_router
 from app.core.config import get_settings
 from app.core.database import create_db_and_tables
 from app.logging.logging_service import configure_logger
+from fastapi.security import HTTPBearer
 
-# ===================================================================
-# 2. Initial Application Setup
-# ===================================================================
-# راه‌اندازی لاگر در اولین قدم
+
+# ============================================
+# 1. Logger
+# ============================================
 configure_logger()
 logger.info("Logger configured.")
 
-# راه‌اندازی دیتابیس (نکته مهم در توضیحات پایین)
-
-logger.info("Database setup initiated (if applicable).")
-
-# دریافت تنظیمات از config
 settings = get_settings()
 
 
+# ============================================
+# 2. Lifespan
+# ============================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
     yield
 
-# ساخت اپلیکیشن FastAPI با اطلاعات تکمیلی برای مستندات
+
+# ============================================
+# 3. Create FastAPI app FIRST
+# ============================================
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    lifespan=lifespan , # این خط را اضافه کنید
-    description="Identity and Access Management (IAM) Service for QForm"
+    lifespan=lifespan,
+    description="Identity and Access Management (IAM) Service for QForm",
 )
+
 logger.info(f"{settings.PROJECT_NAME} v{settings.PROJECT_VERSION} is starting up...")
 
-# ===================================================================
-# 3. Middleware Configuration
-# ===================================================================
-# نکته امنیتی: در محیط پروداکشن، به جای "*" آدرس دقیق فرانت‌اند را قرار بده
+
+# ============================================
+# 4. Security Scheme (global)
+# ============================================
+bearer_scheme = HTTPBearer(auto_error=True)   # پیشنهاد قوی
+
+
+# ============================================
+# 5. Custom OpenAPI AFTER app is created
+# ============================================
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title="IAM Service",
+        version="1.0.0",
+        description="Identity and Access Management",
+        routes=app.routes,
+    )
+
+    # ⭐ اینجا securitySchemes تعریف می‌شود
+    openapi_schema["components"]["securitySchemes"] = {
+    "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+    }
+}
+
+
+    # ⭐ اینجا باعث می‌شود دکمه Authorize در Swagger ظاهر شود
+    openapi_schema["security"] = [{"BearerAuth": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
+
+
+# ============================================
+# 6. Middleware
+# ============================================
 origins = ["*"]
 
 app.add_middleware(
@@ -55,26 +94,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 logger.info("CORS middleware configured with allow_origins: {}", origins)
 
 
-# ===================================================================
-# 4. Include Routers
-# ===================================================================
-# اضافه کردن روتر احراز هویت با یک پیشوند کلی برای تمام API های ورژن 1
+# ============================================
+# 7. Routes
+# ============================================
 app.include_router(auth_router, prefix="/api/v1")
 logger.info("Included auth_router with prefix /api/v1")
 
 
-
-# ===================================================================
-# 5. Root Endpoint (Health Check)
-# ===================================================================
+# ============================================
+# 8. Root Endpoint
+# ============================================
 @app.get("/", tags=["Health Check"])
 async def root():
-    """A simple health check endpoint to confirm the service is running."""
     logger.debug("Root health check endpoint was hit.")
     return {"status": "ok", "message": "Welcome to QForm IAM Service!"}
 
-# این لاگ در زمان استارتاپ یک بار اجرا می‌شود
+
 logger.success("🚀 IAM Service has started successfully!")

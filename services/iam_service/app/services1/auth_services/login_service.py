@@ -11,8 +11,8 @@ from app.services1.auth_services.jwt_service import JWTService
 class LoginService(BaseService):
     def __init__(
         self,
-        hash_service: HashService,
         user_service: UserService,
+        hash_service: HashService,
         jwt_service: JWTService,
     ) -> None:
         super().__init__()

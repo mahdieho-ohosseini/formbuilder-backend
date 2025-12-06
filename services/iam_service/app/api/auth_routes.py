@@ -1,6 +1,6 @@
 import redis.asyncio as redis
 from fastapi import APIRouter, Depends, status, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 from loguru import logger
@@ -21,6 +21,14 @@ from app.domain.user_schemas import (
     ResendOTPResponseSchema,
     UserResponseSchema
 )
+from app.dependencies import (
+    get_register_service,
+    get_login_service,
+    get_user_service,
+    get_jwt_service,
+    get_hash_service,
+)
+
 
 # Services & Repositories
 from app.repositories.user_repository import UserRepository
@@ -31,6 +39,11 @@ from app.services1.auth_services.jwt_service import JWTService
 from app.services1.auth_services.otp_servise import OTPService
 from app.services1.auth_services.hash_service import HashService
 from app.services1.auth_services.email_service import EmailService
+from app.services1.auth_services import jwt_service
+from app.dependencies import get_current_user
+
+bearer_scheme = HTTPBearer(auto_error=True)
+
 
 auth_router = APIRouter(
     prefix="/auth",
@@ -40,59 +53,6 @@ auth_router = APIRouter(
 # ===================================================================
 # Dependency Injection Factories (حیاتی برای رفع ارور DI)
 # ===================================================================
-
-async def get_redis_client() -> redis.Redis:
-    # تنظیمات اتصال به ردیس (می‌تونی از env بخونی)
-    return redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-
-def get_hash_service() -> HashService:
-    return HashService()
-
-def get_jwt_service() -> JWTService:
-    return JWTService()
-
-def get_email_service() -> EmailService:
-    return EmailService()
-
-async def get_user_repository(db: AsyncSession = Depends(get_db)) -> UserRepository:
-    return UserRepository(db)
-
-async def get_user_service(
-    repo: UserRepository = Depends(get_user_repository),
-    hash_service: HashService = Depends(get_hash_service)
-) -> UserService:
-    return UserService(repo, hash_service)
-
-async def get_otp_service(
-    redis_client: redis.Redis = Depends(get_redis_client),
-    email_service: EmailService = Depends(get_email_service)
-) -> OTPService:
-    return OTPService(redis_client, email_service)
-
-# --- Factory اصلی برای RegisterService ---
-async def get_register_service(
-    user_service: UserService = Depends(get_user_service),
-    otp_service: OTPService = Depends(get_otp_service),
-    redis_client: redis.Redis = Depends(get_redis_client)
-) -> RegisterService:
-    # این خط مشکل Missing Argument را حل می‌کند
-    return RegisterService(user_service, otp_service, redis_client)
-
-# --- Factory اصلی برای LoginService ---
-async def get_login_service(
-    user_service: UserService = Depends(get_user_service),
-    hash_service: HashService = Depends(get_hash_service),
-    jwt_service: JWTService = Depends(get_jwt_service)
-) -> LoginService:
-    return LoginService(user_service, hash_service, jwt_service)
-
-# --- Dependency برای گرفتن کاربر لاگین شده ---
-async def get_current_user(
-    token: str = Depends(JWTService.oauth2_scheme), 
-    user_service: UserService = Depends(get_user_service),
-    jwt_service: JWTService = Depends(get_jwt_service)
-) -> User:
-    return await jwt_service.get_current_user(token, user_service)
 
 
 # ===================================================================
@@ -139,22 +99,15 @@ async def verify_otp(
 # 3. Login Endpoint
 # ===================================================================
 @auth_router.post(
-    "/token",
+    "/login",
     response_model=TokenSchema,
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_200_OK
 )
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    login_service: Annotated[LoginService, Depends(get_login_service)],
+async def login(
+    login_data: UserLoginSchema,
+    login_service: Annotated[LoginService, Depends(get_login_service)]
 ):
-    logger.info(f"Logging in user with email: {form_data.username}")
-
-    login_schema = UserLoginSchema(
-        email=form_data.username,
-        password=form_data.password
-    )
-    return await login_service.authenticate_user(login_schema)
-
+    return await login_service.authenticate_user(login_data)
 
 # ===================================================================
 # 4. Resend OTP Endpoint
@@ -177,9 +130,9 @@ async def resend_otp(
 @auth_router.get(
     "/me",
     response_model=UserResponseSchema,
+    dependencies=[Depends(bearer_scheme)],
+    openapi_extra={"security": [{"BearerAuth": []}]},
+    summary="Get current authenticated user",
 )
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)]
-) -> UserResponseSchema:
-    logger.info(f"Fetching details for user: {current_user.email}")
+async def me(current_user=Depends(get_current_user)):
     return current_user

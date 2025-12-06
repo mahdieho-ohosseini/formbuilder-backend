@@ -63,8 +63,7 @@ class UserService(BaseService):
     
 
     async def update_last_login(self, user_id: UUID):
-        return await self.user_repository.update_last_login(user_id, {
-        "last_login": datetime.utcnow()})
+        return await self.user_repository.update_last_login(user_id)
 
 
 #--------------------------------------------------------------------------
