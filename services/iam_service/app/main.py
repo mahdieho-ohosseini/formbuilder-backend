@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from app.api.auth_routes import auth_router
 from app.core.config import get_settings
 from app.core.database import create_db_and_tables
-from app.logging.logging_service import configure_logger
+from app.app_logging.logging_service import configure_logger
 from fastapi.security import HTTPBearer
 
 

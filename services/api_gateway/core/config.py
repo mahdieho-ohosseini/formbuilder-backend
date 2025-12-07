@@ -1,0 +1,6 @@
+IAM_SERVICE_URL = "http://iam_service:8001"
+FORMBUILDER_SERVICE_URL = "http://formbuilder_service:8002"
+MEDIA_SERVICE_URL = "http://media_service:8003"
+
+JWT_SECRET = "6f49e42d44e992bb409f6d7ca600a12ef34a9939ee22067dd90c3554931cd9f4"
+JWT_ALGORITHM = "HS256"

@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
-#آن چیزی که به کاربر می‌دهیم)
 class TokenSchema(BaseModel):#خروجیِ لاگین
     access_token: str
     token_type: str = "bearer"
