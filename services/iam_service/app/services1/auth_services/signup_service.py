@@ -11,7 +11,7 @@ from app.domain.user_schemas import (
     ResendOTPResponseSchema,
     UserResponseSchema
 )
-from app.services1.auth_services.otp_servise import OTPService
+from app.services1.auth_services.otp_service import OTPService
 from app.services1.base_service import BaseService
 from app.services1.user_service import UserService
 
@@ -44,7 +44,7 @@ class RegisterService(BaseService):
         # store pending user in redis
         await self.redis.setex(
             f"pending_user:{user.email}",
-            300,
+            600,
             user.model_dump_json()
         )
 
@@ -73,10 +73,12 @@ class RegisterService(BaseService):
         # load pending user
         raw = await self.redis.get(f"pending_user:{email}")
         if not raw:
-            raise HTTPException(
-                status_code=400,
-                detail="No pending registration found"
-            )
+         raise HTTPException(
+            status_code=400,
+            detail="Registration expired. Please register again."
+          )
+
+        
 
         data = UserCreateSchema.model_validate_json(raw)
 
@@ -96,19 +98,34 @@ class RegisterService(BaseService):
     # ============================================
     # Resend OTP
     # ============================================
-    async def resend_otp(self, resend_schema: ResendOTPSchema) -> ResendOTPResponseSchema:
-        email = resend_schema.email
+    async def resend_otp(
+    self,
+    resend_schema: ResendOTPSchema
+) -> ResendOTPResponseSchema:
 
-        otp_exists = await self.otp_service.check_exist(email)
-        if otp_exists:
-            raise HTTPException(
-                status_code=400,
-                detail="OTP already sent"
-            )
+     email = resend_schema.email
 
-        await self.otp_service.send_otp(email)
-
-        return ResendOTPResponseSchema(
-            success=True,
-            message="OTP resent"
+    # 1️⃣ ثبت‌نام در جریان است؟
+     pending = await self.redis.get(f"pending_user:{email}")
+     if not pending:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No pending registration for this email"
         )
+
+    # 2️⃣ cooldown (بر اساس TTL OTP)
+     if await self.otp_service.check_exist(email):
+         raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="OTP already sent. Please wait before requesting again."
+        )
+     
+
+    # 3️⃣ ارسال مجدد OTP
+     await self.otp_service.send_otp(email)
+
+     return ResendOTPResponseSchema(
+        success=True,
+        message="OTP resent successfully"
+    )
+

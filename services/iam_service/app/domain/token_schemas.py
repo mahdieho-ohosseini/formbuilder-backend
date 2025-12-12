@@ -11,3 +11,5 @@ class TokenDataSchema(BaseModel):
     user_id : int
     is_admin :bool
     is_verified: bool = False
+
+    

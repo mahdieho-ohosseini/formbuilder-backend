@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends,Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from loguru import logger
@@ -7,8 +7,9 @@ from contextlib import asynccontextmanager
 from app.api.auth_routes import auth_router
 from app.core.config import get_settings
 from app.core.database import create_db_and_tables
-from app.app_logging.logging_service import configure_logger
+from app.logging.logging_service import configure_logger
 from fastapi.security import HTTPBearer
+from fastapi.responses import JSONResponse
 
 
 # ============================================
@@ -41,7 +42,12 @@ app = FastAPI(
 
 logger.info(f"{settings.PROJECT_NAME} v{settings.PROJECT_VERSION} is starting up...")
 
-
+@app.middleware("http")
+async def set_utf8_encoding(request: Request, call_next):
+    response = await call_next(request)
+    if isinstance(response, JSONResponse):
+        response.headers["Content-Type"] = "application/json; charset=utf-8"
+    return response
 # ============================================
 # 4. Security Scheme (global)
 # ============================================

@@ -24,7 +24,9 @@ class OTPService:
         
         # 1. ذخیره در ردیس (Async)
         # توجه: اگر ردیس سینک است await نگذار، ولی چون گفتی خطای قبلی await بود، پس ردیس درسته.
-        await self.redis.setex(f"otp:{email}", 300, otp)
+        OTP_TTL = 120  # 2 minutes
+
+        await self.redis.setex(f"otp:{email}", OTP_TTL, otp)
         
         # 2. ارسال ایمیل
         # نکته مهم: اینجا رو تغییر دادم که به جای to=email از آرگومان پوزیشنال استفاده کنه

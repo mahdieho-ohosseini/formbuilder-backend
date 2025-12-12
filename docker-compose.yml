@@ -1,28 +1,60 @@
-version: "3.9"
-
 services:
+  # ------------------------------
+  # 🗄 PostgreSQL Database
+  # ------------------------------
+  iam_postgres:
+    image: postgres:16
+    container_name: iam_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: iam_user
+      POSTGRES_PASSWORD: iam_pass
+      POSTGRES_DB: iam_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - formbuilder_network
+
+  # ------------------------------
+  # 🔐 IAM Service
+  # ------------------------------
   iam_service:
     build: ./services/iam_service
     container_name: iam_service
+    restart: unless-stopped
     env_file:
       - ./services/iam_service/.env
+    depends_on:
+      - iam_postgres
     ports:
-      - "8001:8001"
+      - "8001:8000"
     networks:
       - formbuilder_network
 
+  # ------------------------------
+  # 🚪 API Gateway
+  # ------------------------------
   api_gateway:
-    build: ./services/api_gateway
+    build: ./services/gateway_service
     container_name: api_gateway
+    restart: unless-stopped
     env_file:
-      - ./services/api_gateway/.env
-    ports:
-      - "7000:7000"
+      - ./services/gateway_service/.env
     depends_on:
       - iam_service
+    ports:
+      - "7000:7000"
     networks:
       - formbuilder_network
 
+# ==============================
+# 🧭 Networks & Volumes
+# ==============================
 networks:
   formbuilder_network:
+    driver: bridge
 
+volumes:
+  pgdata:
