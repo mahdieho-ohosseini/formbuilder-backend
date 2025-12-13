@@ -46,6 +46,8 @@ class PasswordResetService:
             "success": True,
             "message": "OTP verified"
         }
+    
+
     async def complete(self, email: str, new_password: str):
      exists = await self.redis.exists(f"reset_session:{email}")
      if not exists:
@@ -68,5 +70,34 @@ class PasswordResetService:
          "success": True,
         "message": "Password reset successful"
       }
+    async def resend(self, email: str):
+     """
+    ارسال مجدد OTP با محدودیت زمانی
+    """
+     from loguru import logger
+    
+     user = await self.user_service.get_user_by_email(email)
+    
+     if user:
+        # چک کن OTP قبلی هنوز معتبره؟
+        ttl = await self.redis.ttl(f"otp:{email}")
+        
+        if ttl > 60:  # اگر بیشتر از 60 ثانیه مونده
+            logger.warning(f"⚠️ OTP still valid for {email}, {ttl}s remaining")
+            raise HTTPException(
+                status_code=429,  # Too Many Requests
+                detail=f"Please wait {ttl} seconds before requesting new OTP"
+            )
+        
+        # OTP منقضی شده یا کمتر از 60 ثانیه مونده - بفرست
+        await self.otp_service.send_otp(email)
+        logger.info(f"✅ OTP resent to: {email}")
+     else:
+        logger.warning(f"⚠️ Resend attempted for non-existent: {email}")
+    
+     return {
+        "success": True,
+        "message": "If email exists, new OTP sent"
+    }
 
-
+    

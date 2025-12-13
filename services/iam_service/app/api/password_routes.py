@@ -1,6 +1,8 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.domain.resetpass_schemas import (
+    PasswordResetResendSchema,
     PasswordResetStartSchema,
     PasswordResetVerifySchema,
     PasswordResetCompleteSchema,
@@ -45,3 +47,11 @@ async def complete_password_reset(
     service: PasswordResetService = Depends(get_password_reset_service),  # ✅ تصحیح شد
 ):
     return await service.complete(data.email, data.new_password)
+
+
+@router.post("/resend_otp", response_model=None)
+async def resend_password_reset_otp(
+    data: PasswordResetResendSchema,
+service: PasswordResetService = Depends(get_password_reset_service),
+):
+    return await service.resend(data.email)

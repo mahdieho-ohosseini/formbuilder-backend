@@ -18,3 +18,6 @@ class PasswordResetCompleteSchema(BaseModel):
 class PasswordResetResponseSchema(BaseModel):
     success: bool
     message: str
+
+class PasswordResetResendSchema(BaseModel):
+    email: EmailStr
