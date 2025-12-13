@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, TIMESTAMP, Boolean, VARCHAR, text, CheckConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, String, TIMESTAMP, Boolean, VARCHAR, text, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.base import EntityBase
@@ -57,3 +57,12 @@ class User(EntityBase):
             name="check_user_status"
         ),
     )
+
+class RefreshToken(EntityBase):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), index=True)
+    token = Column(String, unique=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+

@@ -5,15 +5,18 @@ from fastapi import Depends
 from app.services1.auth_services.email_service import get_email_service
 # اگر ردیس رو از جای دیگه ایمپورت می‌کنی اینجا تنظیم کن
 from app.core.redis import get_redis_client 
+from typing import Annotated, Any
+
 
 class OTPService:
     def __init__(
         self,
-        redis_client: Annotated[any, Depends(get_redis_client)],
-        email_service: Annotated[any, Depends(get_email_service)]
+        redis_client: Any = Depends(get_redis_client),
+        email_service: Any = Depends(get_email_service),
     ):
         self.redis = redis_client
         self.email_service = email_service
+
 
     def _generate_otp(self) -> str:
         """Generate a 6-digit random numeric OTP."""

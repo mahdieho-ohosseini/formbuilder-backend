@@ -10,6 +10,7 @@ from app.core.database import create_db_and_tables
 from app.logging.logging_service import configure_logger
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
+from app.api.password_routes import router as password_reset_router
 
 
 # ============================================
@@ -108,6 +109,10 @@ logger.info("CORS middleware configured with allow_origins: {}", origins)
 # ============================================
 app.include_router(auth_router, prefix="/api/v1")
 logger.info("Included auth_router with prefix /api/v1")
+
+app.include_router(password_reset_router)
+logger.info("Included password_reset_router with prefix /api/v1")
+
 
 
 # ============================================

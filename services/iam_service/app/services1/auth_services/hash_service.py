@@ -15,10 +15,9 @@ class HashService(BaseService):
         return pwd_context.hash(password)
 
     @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
-        return pwd_context.verify(plain_password, hashed_password)
+    def verify_password(plain_password: str, password_hash: str) -> bool:
+        return pwd_context.verify(plain_password, password_hash)
 
-   
     
 def get_hash_service() :
     return HashService()

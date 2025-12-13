@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 from fastapi import Depends, HTTPException
 import redis.asyncio as redis
 
@@ -20,8 +20,15 @@ from app.services1.auth_services.email_service import EmailService
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+from app.services1.auth_services.password_reset_service import PasswordResetService
+from app.repositories.RefreshTokenRepository import RefreshTokenRepository
+
 
 bearer_scheme = HTTPBearer()
+async def get_refresh_token_repository(
+    db: AsyncSession = Depends(get_db)
+) -> RefreshTokenRepository:
+    return RefreshTokenRepository(db)
 
 
 # -----------------------------
@@ -57,9 +64,10 @@ async def get_user_repository(
 # -----------------------------
 async def get_user_service(
     repo: UserRepository = Depends(get_user_repository),
-    hash_service: HashService = Depends(get_hash_service)
+    hash_service: HashService = Depends(get_hash_service),
+    refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository)  # ✅ این خط رو اضافه کن
 ) -> UserService:
-    return UserService(repo, hash_service)
+    return UserService(repo, hash_service, refresh_token_repo)  # ✅ اینجا هم
 
 # -----------------------------
 # OTP Service
@@ -128,3 +136,17 @@ async def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+#-----------------------------------------
+# در dependencies.py
+async def get_password_reset_service(
+    user_service: UserService = Depends(get_user_service),
+    otp_service: OTPService = Depends(get_otp_service),
+    redis_client: Any = Depends(get_redis_client),
+    hash_service: HashService = Depends(get_hash_service)
+) -> PasswordResetService:
+    return PasswordResetService(
+        user_service,
+        otp_service,
+        redis_client,
+        hash_service
+    )
