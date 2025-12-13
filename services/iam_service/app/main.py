@@ -79,7 +79,6 @@ def custom_openapi():
 
 
     # ⭐ اینجا باعث می‌شود دکمه Authorize در Swagger ظاهر شود
-    openapi_schema["security"] = [{"BearerAuth": []}]
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema

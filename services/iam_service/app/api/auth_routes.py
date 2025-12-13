@@ -1,5 +1,5 @@
 import redis.asyncio as redis
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException,Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -8,7 +8,7 @@ from loguru import logger
 
 from app.core.database import get_db
 from app.domain.models import User
-from app.domain.token_schemas import TokenSchema
+from app.domain.token_schemas import TokenSchema , RefreshRequest
 from app.domain.user_schemas import (
     UserCreateSchema,
     RegisterStartResponse,     
@@ -17,7 +17,8 @@ from app.domain.user_schemas import (
     UserLoginSchema,
     ResendOTPSchema,
     ResendOTPResponseSchema,
-    UserResponseSchema
+    UserResponseSchema,
+    
 )
 from app.dependencies import (
     get_register_service,
@@ -128,3 +129,16 @@ async def resend_otp(
 )
 async def me(current_user=Depends(get_current_user)):
     return current_user
+
+@auth_router.post("/refresh", summary="Refresh access token")
+async def refresh_token(
+    body: RefreshRequest,
+    jwt_service: JWTService = Depends(),
+):
+    tokens = await jwt_service.refresh(body.refresh_token)
+
+    return {
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens["refresh_token"],
+        "token_type": "bearer"
+    }

@@ -58,10 +58,18 @@ class LoginService(BaseService):
 
         # 5) ساخت access_token
         access_token = self.jwt_service.create_access_token(
-            data={"sub": str(existing_user.user_id)}
+             str(existing_user.user_id)
         )
+        # 5) ساخت refresh_token
+
+        refresh_token = self.jwt_service.create_refresh_token( str(existing_user.user_id))
+
 
         logger.info(f"User with email {user.email} authenticated successfully")
 
         # 6) برگرداندن اسکیمای نهایی
-        return TokenSchema(access_token=access_token, token_type="bearer")
+        return {
+       "access_token": access_token,
+       "refresh_token": refresh_token,
+       "token_type": "bearer"
+               }

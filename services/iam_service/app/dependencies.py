@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 import redis.asyncio as redis
 
 # Core
@@ -75,10 +75,9 @@ async def get_otp_service(
 # JWT
 # -----------------------------
 def get_jwt_service(
-    user_service: UserService = Depends(get_user_service)
+    jwt_service: JWTService = Depends(),
 ) -> JWTService:
-    return JWTService(user_service)
-
+    return jwt_service
 
 # -----------------------------
 # Register Service
@@ -110,7 +109,22 @@ def get_login_service(
 # -----------------------------
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    jwt_service: JWTService = Depends(get_jwt_service)
+    jwt_service: JWTService = Depends(get_jwt_service),
+    user_service: UserService = Depends(get_user_service),
 ):
     token = credentials.credentials
-    return await jwt_service.get_current_user(token)
+
+    payload = await jwt_service.decode_token(token)
+
+    if payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid access token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    user = await user_service.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
