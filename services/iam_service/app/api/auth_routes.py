@@ -45,9 +45,11 @@ bearer_scheme = HTTPBearer(auto_error=True)
 
 
 auth_router = APIRouter(
-    prefix="/auth",
-    tags=["Authentication & Registration"]
+    prefix="/auth",  # 🔥 اینجا عوض شد (auth حذف شد)
+    tags=["auth"],   # 🔥 تگ رو هم جدا کن تا توی Swagger قاطی نشه
 )
+
+
 
 # ===================================================================
 # 1. Register Endpoint (Step 1: Send OTP)

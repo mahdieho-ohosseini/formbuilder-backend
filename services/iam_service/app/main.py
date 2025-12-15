@@ -70,13 +70,14 @@ def custom_openapi():
     )
 
     # ⭐ اینجا securitySchemes تعریف می‌شود
+    # ✅ Security Schemes (اصلاح شد)
     openapi_schema["components"]["securitySchemes"] = {
-    "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT",
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }
     }
-}
 
 
     # ⭐ اینجا باعث می‌شود دکمه Authorize در Swagger ظاهر شود
@@ -107,12 +108,14 @@ logger.info("CORS middleware configured with allow_origins: {}", origins)
 # ============================================
 # 7. Routes
 # ============================================
+
+# روتر Auth
 app.include_router(auth_router, prefix="/api/v1")
 logger.info("Included auth_router with prefix /api/v1")
 
-app.include_router(password_reset_router)
+# روتر Password Reset (🔥 اینجا prefix اضافه شد)
+app.include_router(password_reset_router, prefix="/api/v1")
 logger.info("Included password_reset_router with prefix /api/v1")
-
 
 
 # ============================================
