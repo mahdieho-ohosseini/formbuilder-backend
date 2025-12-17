@@ -11,28 +11,34 @@ from app.services1.profile_service import ProfileService
 
 bearer_scheme = HTTPBearer(auto_error=True)
 
+
 profile_router = APIRouter(
     prefix="/profile",
     tags=["Profile"],
-    dependencies=[Depends(bearer_scheme)],
 )
 from typing import Any
 
 @profile_router.get(
     "/me",
     response_model=UserProfileResponse,
+    dependencies=[Depends(bearer_scheme)],
+    openapi_extra={"security": [{"BearerAuth": []}]},
+
 )
 async def get_profile(
     current_user: Any = Depends(get_current_user),  # ✅ مهم
     service: ProfileService = Depends(get_profile_service),
 ):
-    return await service.get_profile(current_user.id)
+    return await service.get_profile(current_user.user_id)
 
 
 
 @profile_router.post(
     "/change-password",
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(bearer_scheme)],
+    openapi_extra={"security": [{"BearerAuth": []}]},
+
 )
 async def change_password(
     payload: ChangePasswordRequest,
@@ -40,7 +46,7 @@ async def change_password(
     service: ProfileService = Depends(get_profile_service),
 ):
     await service.change_password(
-        current_user.id,
+        current_user.user_id,
         payload.current_password,
         payload.new_password,
     )

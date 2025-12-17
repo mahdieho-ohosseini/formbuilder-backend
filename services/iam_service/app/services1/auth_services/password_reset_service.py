@@ -58,10 +58,9 @@ class PasswordResetService:
         raise HTTPException(status_code=400, detail="User not found")
 
     # ✅ hashing استاندارد
-     hashed = self.hash_service.hash_password(new_password)
 
     # ✅ استفاده از user_id (نه id)
-     await self.user_service.update_password(user.user_id, hashed)
+     await self.user_service.update_password(user.user_id, new_password)
      await self.user_service.invalidate_all_tokens(user.user_id)
  
      await self.redis.delete(f"reset_session:{email}")

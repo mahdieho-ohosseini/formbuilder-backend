@@ -32,13 +32,11 @@ class ProfileService:
     ):
         user = await self.repo.get_by_id(user_id)
 
-        if not self.hash_service.verify(
+        if not self.hash_service.verify_password (
             current_password,
             user.password_hash
         ):
             raise HTTPException(status_code=400, detail="Invalid current password")
 
-        new_hash = self.hash_service.hash_password(new_password)
-
-        await self.user_service.update_password(user.id, new_hash)
-        await self.user_service.invalidate_all_tokens(user.id)
+        await self.user_service.update_password(user.user_id, new_password)
+        await self.user_service.invalidate_all_tokens(user.user_id)

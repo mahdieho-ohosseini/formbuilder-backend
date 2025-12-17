@@ -1,3 +1,4 @@
+from uuid import UUID  # ← این خط رو نداری!
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from datetime import datetime
 import re
@@ -7,7 +8,6 @@ import re
 # Response: Profile
 # =========================
 class UserProfileResponse(BaseModel):
-    id: str
     email: str
     full_name: str | None = None
     last_login: datetime | None = None

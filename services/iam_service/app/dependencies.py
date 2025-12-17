@@ -154,7 +154,12 @@ async def get_password_reset_service(
 
 
 async def get_profile_service(
+    db: AsyncSession = Depends(get_db),
     user_service: UserService = Depends(get_user_service),
     hash_service: HashService = Depends(get_hash_service)
 ) -> ProfileService:
-    return ProfileService(user_service, hash_service)
+    return ProfileService(
+        db=db,
+        user_service=user_service,
+        hash_service=hash_service
+    )

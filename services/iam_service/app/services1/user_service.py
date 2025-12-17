@@ -8,6 +8,7 @@ from typing import Optional
 from app.domain.models import User
 from app.domain.user_schemas import UserCreateSchema
 from app.repositories.user_repository import UserRepository
+
 from app.services1.auth_services.hash_service import HashService
 from app.services1.base_service import BaseService
 from app.repositories.RefreshTokenRepository import RefreshTokenRepository
@@ -37,14 +38,6 @@ class UserService(BaseService):
 
         return await self.user_repository.create_user(user_model)
 
-    async def update_full_name(self, user_id: UUID, new_full_name: str) -> None:
-        logger.info(f"Updating full_name for user {user_id}")
-        await self.user_repository.update_full_name(user_id, new_full_name)
-
-    async def update_password(self, user_id: UUID, new_password_hash: str) -> None:
-        logger.info(f"Updating password for user {user_id}")
-        hashed = self.hash_service.hash_password(new_password_hash)
-        await self.user_repository.update_password(user_id, hashed)
 
     async def delete_user(self, user: User) -> None:
         logger.info(f"Deleting user with id {user.user_id}")
@@ -72,6 +65,13 @@ class UserService(BaseService):
     
      await self.refresh_token_repository.delete_all_by_user_id(user_id)
 
+    async def update_password(self, user_id: UUID, new_password: str) -> None:
+        """آپدیت رمز عبور کاربر"""
+        logger.info(f"Updating password for user {user_id}")
+        
+        hashed = self.hash_service.hash_password(new_password)
+        await self.user_repository.update_password(user_id, hashed)
+
 
 
     async def create_admin(self, user_body: UserCreateSchema) -> User:
@@ -92,3 +92,6 @@ class UserService(BaseService):
         )
 
         return await self.user_repository.create_user(admin_user)
+    
+
+    

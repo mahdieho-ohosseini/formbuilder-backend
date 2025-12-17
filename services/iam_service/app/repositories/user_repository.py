@@ -106,6 +106,18 @@ class UserRepository:
         stmt = select(User).where(User.role == "admin")
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+    
+    
+    async def update_password(self, user_id: UUID, new_hash: str) -> None:
+        """آپدیت رمز عبور"""
+        stmt = (
+            update(User)
+            .where(User.user_id == user_id)
+            .values(password_hash=new_hash, updated_at=datetime.utcnow())
+        )
+        await self.session.execute(stmt)
+        await self.session.commit()
+
 
 
 # ---------------------------------------

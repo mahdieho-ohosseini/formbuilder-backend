@@ -10,7 +10,7 @@ class ProfileRepository:
 
     async def get_by_id(self, user_id: str) -> User:
         result = await self.session.execute(
-            select(User).where(User.id == user_id)
+            select(User).where(User.user_id == user_id)
         )
         return result.scalar_one()
     
