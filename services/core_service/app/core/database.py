@@ -44,23 +44,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         await session.close()
 
 
-from sqlalchemy import text
-
 async def db_health_check() -> bool:
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         return True
-    except Exception as e:
-        logger.error(f"[DB Health] Connection Error: {e}")
+    except Exception as ex:
+        logger.error(f"[DB Health] Connection Error: {ex}")
         return False
-
 
 print("TABLES =", EntityBase.metadata.tables)
 
 async def create_db_and_tables():
     # This loads the model class so SQLAlchemy registers the table
-    from app.domain.models import User
 
     print("Registered tables:", EntityBase.metadata.tables.keys())
 
@@ -74,3 +70,13 @@ async def create_db_and_tables():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(create_db_and_tables())
+
+
+import asyncio
+
+async def main():
+    is_ok = await db_health_check()
+    print("✅ DB HEALTH =", is_ok)
+
+if __name__ == "__main__":
+    asyncio.run(main())

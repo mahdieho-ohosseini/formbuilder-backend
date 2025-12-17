@@ -11,7 +11,7 @@ from app.logging.logging_service import configure_logger
 from fastapi.security import HTTPBearer
 from fastapi.responses import JSONResponse
 from app.api.password_routes import router as password_reset_router
-
+from app.api.profile_routes import profile_router
 
 # ============================================
 # 1. Logger
@@ -117,6 +117,8 @@ logger.info("Included auth_router with prefix /api/v1")
 app.include_router(password_reset_router, prefix="/api/v1")
 logger.info("Included password_reset_router with prefix /api/v1")
 
+app.include_router(profile_router, prefix="/api/v1")
+logger.info("Included profile_router with prefix /api/v1")
 
 # ============================================
 # 8. Root Endpoint

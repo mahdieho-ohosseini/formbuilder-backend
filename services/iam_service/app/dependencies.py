@@ -22,6 +22,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.services1.auth_services.password_reset_service import PasswordResetService
 from app.repositories.RefreshTokenRepository import RefreshTokenRepository
+from app.services1.profile_service import ProfileService
 
 
 bearer_scheme = HTTPBearer()
@@ -150,3 +151,10 @@ async def get_password_reset_service(
         redis_client,
         hash_service
     )
+
+
+async def get_profile_service(
+    user_service: UserService = Depends(get_user_service),
+    hash_service: HashService = Depends(get_hash_service)
+) -> ProfileService:
+    return ProfileService(user_service, hash_service)

@@ -61,24 +61,6 @@ class UserRepository:
         await self.session.execute(stmt)
         await self.session.commit()
 
-    async def update_full_name(self, user_id: UUID, full_name: str) -> None:
-        stmt = (
-            update(User)
-            .where(User.user_id == user_id)
-            .values(full_name=full_name, updated_at=datetime.utcnow())
-        )
-        await self.session.execute(stmt)
-        await self.session.commit()
-
-    async def update_password(self, user_id: UUID, new_hash: str) -> None:
-        stmt = (
-            update(User)
-            .where(User.user_id == user_id)
-            .values(password_hash=new_hash, updated_at=datetime.utcnow())
-        )
-        await self.session.execute(stmt)
-        await self.session.commit()
-
     # -----------------------------------
     # VERIFY ACCOUNT
     # -----------------------------------
