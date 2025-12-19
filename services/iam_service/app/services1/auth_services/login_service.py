@@ -7,6 +7,8 @@ from app.services1.auth_services.hash_service import HashService
 from app.services1.base_service import BaseService
 from app.services1.user_service import UserService
 from app.services1.auth_services.jwt_service import JWTService
+from app.core.config import get_settings
+settings = get_settings()
 
 class LoginService(BaseService):
     def __init__(
@@ -14,11 +16,14 @@ class LoginService(BaseService):
         user_service: UserService,
         hash_service: HashService,
         jwt_service: JWTService,
+        redis_client,
     ) -> None:
         super().__init__()
         self.user_service = user_service
         self.hash_service = hash_service
         self.jwt_service = jwt_service
+        self.redis = redis_client
+
 
     async def authenticate_user(self, user: UserLoginSchema) -> TokenSchema:
         # 1) پیدا کردن کاربر بر اساس ایمیل
@@ -63,6 +68,12 @@ class LoginService(BaseService):
         # 5) ساخت refresh_token
 
         refresh_token = self.jwt_service.create_refresh_token( str(existing_user.user_id))
+        await self.redis.setex(
+            f"refresh:{refresh_token}",
+            settings.REFRESH_TOKEN_EXPIRE_DAYS,  # یا عدد ثابت مثل 86400
+            str(existing_user.user_id),
+)
+
 
 
         logger.info(f"User with email {user.email} authenticated successfully")

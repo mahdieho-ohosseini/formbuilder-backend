@@ -8,6 +8,9 @@ from app.domain.profile_schemas import (
     ChangePasswordRequest,
 )
 from app.services1.profile_service import ProfileService
+from app.domain.token_schemas import LogoutRequest
+from app.services1.auth_services.logout_service import LogoutService
+from app.dependencies import get_logout_service
 
 bearer_scheme = HTTPBearer(auto_error=True)
 
@@ -54,5 +57,21 @@ async def change_password(
         "success": True,
         "message": "Password changed successfully"
     }
+
+
+
+@profile_router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+    summary="Logout user (invalidate refresh token)",
+)
+async def logout(
+    body: LogoutRequest,
+    logout_service: Annotated[LogoutService, Depends(get_logout_service)],
+):
+    await logout_service.logout(body.refresh_token)
+    return {"message": "Logged out successfully"}
+
+
 
     

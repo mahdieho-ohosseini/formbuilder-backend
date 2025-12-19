@@ -1,13 +1,28 @@
-from time import time
+from datetime import datetime, timezone
+from typing import Any
 
-BLACKLIST_PREFIX = "blacklist:token:"
+# ---------------------------
+# Blacklist Refresh Token JTI
+# ---------------------------
+
+async def blacklist_token(redis: Any, jti: str, exp: int) -> None:
+    """
+    Blacklist a token JTI until its expiration time.
+    """
+    ttl = exp - int(datetime.now(timezone.utc).timestamp())
+
+    # اگر توکن عملاً منقضی شده، دیگه ذخیره نکن
+    if ttl <= 0:
+        return
+
+    key = f"blacklist:jti:{jti}"
+    await redis.setex(key, ttl, "1")
 
 
-async def blacklist_token(redis, jti: str, exp: int):
-    ttl = exp - int(time())
-    if ttl > 0:
-        await redis.setex(f"{BLACKLIST_PREFIX}{jti}", ttl, "1")
+# ---------------------------
+# Check if Token is Blacklisted
+# ---------------------------
 
-
-async def is_token_blacklisted(redis, jti: str) -> bool:
-    return await redis.exists(f"{BLACKLIST_PREFIX}{jti}") > 0
+async def is_token_blacklisted(redis: Any, jti: str) -> bool:
+    key = f"blacklist:jti:{jti}"
+    return await redis.exists(key) > 0

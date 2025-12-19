@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
-    REFRESH_TOKEN_EXPIRE_DAYS  : int
+    REFRESH_TOKEN_EXPIRE_DAYS  : int=10
     # OTP
     OTP_EXPIRE_TIME: int
 

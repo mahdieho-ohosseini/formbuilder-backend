@@ -18,4 +18,8 @@ class TokenDataSchema(BaseModel):
     is_admin :bool
     is_verified: bool = False
 
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
+
     

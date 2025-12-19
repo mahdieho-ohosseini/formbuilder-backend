@@ -17,6 +17,7 @@ from app.services1.auth_services.login_service import LoginService
 from app.services1.auth_services.signup_service import RegisterService
 from app.services1.auth_services.otp_service import OTPService
 from app.services1.auth_services.email_service import EmailService
+from app.services1.auth_services.logout_service import LogoutService
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -50,6 +51,12 @@ def get_hash_service() -> HashService:
 def get_email_service() -> EmailService:
     return EmailService()
 
+def get_logout_service(
+    jwt_service: Annotated[JWTService, Depends()],
+
+    redis_client = Depends(get_redis_client),
+):
+    return LogoutService(jwt_service,redis_client)
 
 # -----------------------------
 # Repository Factory
@@ -105,12 +112,15 @@ async def get_register_service(
 def get_login_service(
     user_service: UserService = Depends(get_user_service),
     hash_service: HashService = Depends(get_hash_service),
-    jwt_service: JWTService = Depends(get_jwt_service)
+    jwt_service: JWTService = Depends(get_jwt_service),
+    redis_client = Depends(get_redis_client),
+
 ):
     return LoginService(
         user_service,
         hash_service,
-        jwt_service
+        jwt_service,
+        redis_client
     )
 
 # -----------------------------
