@@ -24,7 +24,6 @@ class Survey(EntityBase):
     slug = Column(String(255), unique=True, nullable=False,index=True)
     public_code = Column(String(12), unique=True, nullable=True, index=True)
     is_public = Column(Boolean, nullable=False,server_default=text("false"))
-    
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
