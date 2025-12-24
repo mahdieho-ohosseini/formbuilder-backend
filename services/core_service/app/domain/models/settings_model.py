@@ -8,6 +8,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from app.core.database import EntityBase  # فرض می‌کنیم ORM Base جای درستی ایمپورت شده
+from app.domain.models.servey_model import Survey
 
 class Setting(EntityBase):
     __tablename__ = "settings"
@@ -35,7 +36,7 @@ class Setting(EntityBase):
     language = Column(String(10), default="fa")
     show_prev_button = Column(Boolean, default=True)
     show_next_button = Column(Boolean, default=True)
-    auto_advance = Column(Boolean, default=True)
+    auto_advance = Column(Boolean, default=False)
 
     created_at = Column(
         TIMESTAMP(timezone=True),

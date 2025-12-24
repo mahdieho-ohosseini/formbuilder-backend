@@ -18,8 +18,8 @@ def configure_logger():
     }
 
     # Add file logging for JSON logs
-    logger.add("logs/iam_service_info.log", level="INFO", **json_logging_format)
-    logger.add("logs/iam_service_error.log", level="ERROR", **json_logging_format)
+    logger.add("logs/core_service_info.log", level="INFO", **json_logging_format)
+    logger.add("logs/core_service_error.log", level="ERROR", **json_logging_format)
 
     # Custom log format for console and stderr
     log_format = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:" \

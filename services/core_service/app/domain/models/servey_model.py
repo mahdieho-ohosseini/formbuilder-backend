@@ -2,6 +2,8 @@ import uuid
 from sqlalchemy import Column, String, Boolean, ForeignKey, TIMESTAMP, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.base import EntityBase
+from sqlalchemy.orm import relationship
+from app.domain.models.settings_model import Setting
 
 class Survey(EntityBase):
     __tablename__ = "surveys"
@@ -44,5 +46,13 @@ class Survey(EntityBase):
     deleted_at = Column(
     TIMESTAMP(timezone=True),
     nullable=True)
+
+    settings = relationship(
+    "Setting",
+    back_populates="survey",
+    uselist=False,
+    cascade="all, delete-orphan"
+)
+
 
     
