@@ -8,7 +8,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from app.core.database import EntityBase  # فرض می‌کنیم ORM Base جای درستی ایمپورت شده
-from app.domain.models.servey_model import Survey
 
 class Setting(EntityBase):
     __tablename__ = "settings"

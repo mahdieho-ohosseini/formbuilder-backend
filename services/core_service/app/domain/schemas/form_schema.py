@@ -12,7 +12,7 @@ class CreateFormResponse(BaseModel):
     survey_id: UUID
     title: str
     slug: str
-    is_public: bool
+    is_public: bool = False
     created_at: datetime
 
     class Config:

@@ -3,7 +3,6 @@ from sqlalchemy import Column, String, Boolean, ForeignKey, TIMESTAMP, func, tex
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.base import EntityBase
 from sqlalchemy.orm import relationship
-from app.domain.models.settings_model import Setting
 
 class Survey(EntityBase):
     __tablename__ = "surveys"
@@ -18,7 +17,6 @@ class Survey(EntityBase):
     )
     creator_id = Column(
     UUID(as_uuid=True),
-    ForeignKey("users.user_id", ondelete="CASCADE"),
     nullable=False
 )
 
