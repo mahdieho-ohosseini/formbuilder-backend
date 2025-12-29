@@ -54,6 +54,8 @@ async def db_health_check() -> bool:
         return False
 
 print("TABLES =", EntityBase.metadata.tables)
+# ⬇⬇⬇ THIS IS THE MISSING PIECE ⬇⬇⬇
+import app.domain.models
 
 async def create_db_and_tables():
     # This loads the model class so SQLAlchemy registers the table
