@@ -5,6 +5,7 @@ from fastapi import Depends
 from app.repository.form_repository import FormRepository, get_form_repository
 
 
+
 class FormService:
     def __init__(
         self, 
@@ -40,3 +41,10 @@ class FormService:
         safe_title = title.strip().replace(" ", "-")[:50]
         random_suffix = uuid.uuid4().hex[:6]
         return f"{safe_title}-{random_suffix}"
+    
+
+    async def get_my_forms(self, creator_id: uuid.UUID):
+        return await self.repository.get_forms_by_creator(creator_id)
+
+    
+    

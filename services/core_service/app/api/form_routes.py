@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from uuid import UUID
 from loguru import logger
+from fastapi import Header
 
-from app.domain.schemas.form_schema import CreateFormRequest, CreateFormResponse
+from app.domain.schemas.form_schema import (
+    CreateFormRequest,
+    CreateFormResponse,
+    SeeFormsResponseSchema)
 from app.services.form_service import FormService
 from app.repository.form_repository import get_form_repository, FormRepository
 
@@ -44,6 +48,7 @@ async def create_form(
     new_survey = await service.create_new_form(
         creator_id=creator_id,
         title=payload.title,
+    
 
     )
     
@@ -58,5 +63,28 @@ async def create_form(
         created_at=new_survey.created_at
     )
 
+
+@router.get(
+    "/my",
+    response_model=list[SeeFormsResponseSchema],
+)
+async def get_my_forms(
+    request: Request,
+    form_repository: FormRepository = Depends(get_form_repository)
+):
+    # ✅ 1. گرفتن user_id از JWT middleware
+    user_id_str = request.state.user_id
+
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    # ✅ 2. صدا زدن سرویس
+    service = FormService(repository=form_repository)
+    return await service.get_my_forms(user_id)
 
 

@@ -17,3 +17,12 @@ class CreateFormResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+#پاسخ به دریافت  فرم های کاربر
+class SeeFormsResponseSchema(BaseModel):
+    survey_id: UUID
+    title: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

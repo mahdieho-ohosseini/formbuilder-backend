@@ -1,3 +1,5 @@
+import select
+from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
@@ -42,6 +44,13 @@ class FormRepository:
         self.session.add(default_setting)
         
         return new_survey
+    
+    async def get_forms_by_creator(self, creator_id: UUID):
+        stmt = select(Survey).where(
+            Survey.creator_id == creator_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
 
 
 # ---------------------------------------
