@@ -1,4 +1,4 @@
-import select
+import select 
 from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,6 +51,22 @@ class FormRepository:
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
+    
+
+    
+    async def get_owned_form(self, survey_id, user_id):
+        stmt = (
+            select(Survey)
+            .where(
+                Survey.id == survey_id,
+                Survey.creator_id == user_id,
+                Survey.is_deleted == False
+            )
+        )
+
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+    
 
 
 # ---------------------------------------
