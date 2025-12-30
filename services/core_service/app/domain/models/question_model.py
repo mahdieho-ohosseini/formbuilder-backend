@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, Integer, Text, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, String, Boolean, Integer, Text, TIMESTAMP, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.base import EntityBase
 import uuid
@@ -20,3 +20,12 @@ class Question(EntityBase):
     is_required = Column(Boolean, default=True)
     order_index = Column(Integer, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+__table_args__ = (
+    UniqueConstraint(
+        "survey_id",
+        "question_text",
+        name="uq_survey_text_question"
+    ),
+)

@@ -29,6 +29,29 @@ class QuestionRepository:
             f"Last order_index for survey {survey_id}: {last_order}"
         )
         return last_order
+    # -----------------------------------
+    # CHECK QUESTION EXISTS (ANTI DUP)
+    # -----------------------------------
+    async def exists_question(
+        self,
+        survey_id: UUID,
+        question_text: str,
+    ) -> bool:
+        stmt = select(
+            func.count(Question.question_id)
+        ).where(
+            Question.survey_id == survey_id,
+            Question.question_text == question_text,
+        )
+
+        result = await self.session.execute(stmt)
+        count = result.scalar_one()
+
+        logger.debug(
+            f"Duplicate check for survey={survey_id}, text='{question_text}': {count}"
+        )
+
+        return count > 0
 
     # -----------------------------------
     # CREATE QUESTION

@@ -4,6 +4,7 @@ from sqlalchemy import text
 from loguru import logger
 from app.core.config import get_settings
 from app.core.base import EntityBase
+from fastapi import HTTPException
 
 
 config = get_settings()
@@ -36,10 +37,17 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     session = async_session()
     try:
         yield session
+
+    except HTTPException:
+        # ✅ خطای بیزنسی، نه دیتابیس
+        await session.rollback()
+        raise
+
     except Exception as ex:
         logger.error(f"DB error: {ex}")
         await session.rollback()
         raise
+
     finally:
         await session.close()
 

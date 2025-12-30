@@ -1,4 +1,4 @@
-import select 
+from sqlalchemy import select
 from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,7 @@ class FormRepository:
     # -----------------------------------
     async def create_survey(
         self, 
-        creator_id: str, 
+        creator_id: UUID, 
         title: str, 
         slug: str
     ) -> Survey:
@@ -53,20 +53,34 @@ class FormRepository:
         return result.scalars().all()
     
 
-    
+
     async def get_owned_form(self, survey_id, user_id):
         stmt = (
             select(Survey)
             .where(
-                Survey.id == survey_id,
+                Survey.survey_id == survey_id,
                 Survey.creator_id == user_id,
                 Survey.is_deleted == False
             )
         )
 
-        result = await self.db.execute(stmt)
+        result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
     
+    
+    async def get_by_creator_and_title(
+       self,
+       creator_id: UUID,
+       title: str
+     ) -> Survey | None:
+        stmt = select(Survey).where(
+        Survey.creator_id == creator_id,
+        Survey.title == title,
+        Survey.is_deleted == False
+    )
+
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()   
 
 
 # ---------------------------------------

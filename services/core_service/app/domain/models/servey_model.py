@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, ForeignKey, TIMESTAMP, func, text
+from sqlalchemy import Column, String, Boolean, ForeignKey, TIMESTAMP, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.base import EntityBase
 from sqlalchemy.orm import relationship
@@ -51,6 +51,15 @@ class Survey(EntityBase):
     uselist=False,
     cascade="all, delete-orphan"
 )
+    
+__table_args__ = (
+    UniqueConstraint(
+        "creator_id",
+        "title",
+        name="uq_user_form_title"
+    ),
+)
+
 
 
     
