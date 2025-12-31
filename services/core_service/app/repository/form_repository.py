@@ -82,6 +82,12 @@ class FormRepository:
 
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+    
+
+
+    async def delete(self, form: Survey):
+        await self.session.delete(form)
+        await self.session.commit()
 
 
  

@@ -6,8 +6,9 @@ from fastapi import Header
 from app.domain.schemas.form_schema import (
     CreateFormRequest,
     CreateFormResponse,
+    DeleteFormResponse,
     SeeFormsResponseSchema)
-from app.services.form_service import FormService
+from app.services.form_service import FormService, get_form_service
 from app.repository.form_repository import get_form_repository, FormRepository
 
 router = APIRouter(prefix="/forms", tags=["Form Builder"])
@@ -88,3 +89,19 @@ async def get_my_forms(
     return await service.get_my_forms(user_id)
 
 
+@router.delete(
+    "/{survey_id}",
+    response_model=DeleteFormResponse,
+    summary="Delete a form",
+)
+async def delete_form(
+    survey_id: UUID,
+    request: Request,
+    service: FormService = Depends(get_form_service),
+):
+    user_id: UUID = request.state.user_id
+
+    return await service.delete_form(
+        survey_id=survey_id,
+        user_id=user_id,
+    )

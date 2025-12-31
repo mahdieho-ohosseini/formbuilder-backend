@@ -2,7 +2,9 @@ import uuid
 from loguru import logger
 from fastapi import Depends, HTTPException, status
 from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import get_db
 from app.repository.form_repository import FormRepository, get_form_repository
 
 
@@ -61,3 +63,34 @@ class FormService:
 
     async def get_my_forms(self, creator_id: UUID):
         return await self.repository.get_forms_by_creator(creator_id)
+    
+
+
+    async def delete_form(self, survey_id: UUID, user_id: UUID):
+        # 1️⃣ چک مالکیت
+        form = await self.repository.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+
+        if not form:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Form not found or access denied",
+            )
+
+        # 2️⃣ حذف
+        await self.repository.delete(form)
+
+        return {
+            "message": "Form deleted successfully",
+            "survey_id": survey_id,
+        }
+
+
+
+def get_form_service(
+    session: AsyncSession = Depends(get_db),
+) -> FormService:
+    form_repo = FormRepository(session)
+    return FormService(form_repo)

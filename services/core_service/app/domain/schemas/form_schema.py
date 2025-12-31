@@ -26,3 +26,7 @@ class SeeFormsResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DeleteFormResponse(BaseModel):
+    message: str
+    survey_id: UUID
