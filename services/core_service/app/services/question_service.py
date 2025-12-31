@@ -1,8 +1,21 @@
 from uuid import UUID
-from fastapi import Depends, HTTPException
-from app.repository.question_repository import QuestionRepository, get_question_repository
-from app.repository.form_repository import FormRepository, get_form_repository
-from app.domain.schemas.question_schema import CreateTextQuestionRequest
+from fastapi import Depends, HTTPException, status
+
+from app.repository.question_repository import (
+    QuestionRepository,
+    get_question_repository,
+)
+from app.repository.form_repository import (
+    FormRepository,
+    get_form_repository,
+)
+
+from app.domain.schemas.question_schema import (
+    CreateTextQuestionRequest,
+    DeleteQuestionResponse,
+    QuestionListItemSchema,
+    QuestionListResponse,
+)
 
 
 class QuestionService:
@@ -14,49 +27,43 @@ class QuestionService:
         self.question_repo = question_repo
         self.form_repo = form_repo
 
+    # =========================================================
+    # CREATE — Add Text Question
+    # =========================================================
     async def add_text_question(
         self,
+        *,
         survey_id: UUID,
         user_id: UUID,
         payload: CreateTextQuestionRequest,
     ):
-        # -----------------------------------
-        # Ownership Check
-        # -----------------------------------
+        # ✅ Ownership check
         form = await self.form_repo.get_owned_form(
             survey_id=survey_id,
-            user_id=user_id
+            user_id=user_id,
         )
-
         if not form:
             raise HTTPException(
-                status_code=404,
-                detail="Form not found or you don't have permission"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this form",
             )
 
-        # -----------------------------------
-        # DUPLICATE CHECK ✅✅✅
-        # -----------------------------------
+        # ✅ Duplicate check
         exists = await self.question_repo.exists_question(
             survey_id=survey_id,
             question_text=payload.question_text,
         )
-
         if exists:
             raise HTTPException(
-                status_code=409,
-                detail="Question with same text already exists in this form"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Question with same text already exists in this form",
             )
 
-        # -----------------------------------
-        # Calculate order_index
-        # -----------------------------------
+        # ✅ Calculate order_index
         last_order = await self.question_repo.get_last_order(survey_id)
         order_index = last_order + 1
 
-        # -----------------------------------
-        # Create Question
-        # -----------------------------------
+        # ✅ Create question
         question = await self.question_repo.create_question(
             survey_id=survey_id,
             question_text=payload.question_text,
@@ -67,14 +74,85 @@ class QuestionService:
             order_index=order_index,
         )
 
-        # ✅ Commit نهایی
         await self.question_repo.session.commit()
         await self.question_repo.session.refresh(question)
 
         return question
 
+    # =========================================================
+    # READ — List Questions
+    # =========================================================
+    async def list_questions(
+        self,
+        *,
+        survey_id: UUID,
+        user_id: UUID,
+    ) -> QuestionListResponse:
+        # ✅ Ownership check
+        survey = await self.form_repo.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this form",
+            )
 
-# ✅ Dependency Factory با Depends صحیح
+        questions = await self.question_repo.list_by_survey_id(survey_id)
+
+        return QuestionListResponse(
+            items=[
+                QuestionListItemSchema.from_orm(q)
+                for q in questions
+            ]
+        )
+
+    # =========================================================
+    # DELETE — Delete Question
+    # =========================================================
+    async def delete_question(
+        self,
+        *,
+        survey_id: UUID,
+        question_id: UUID,
+        user_id: UUID,
+    ) -> DeleteQuestionResponse:
+        # ✅ Ownership check
+        survey = await self.form_repo.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this form",
+            )
+
+        # ✅ Check question exists
+        question = await self.question_repo.get_by_id_and_survey(
+            question_id=question_id,
+            survey_id=survey_id,
+        )
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found",
+            )
+
+        await self.question_repo.delete(question)
+        await self.question_repo.session.commit()
+
+        return DeleteQuestionResponse(
+            success=True,
+            message="Question deleted successfully",
+            question_id=question_id,
+        )
+
+
+# =========================================================
+# Dependency Factory
+# =========================================================
 def get_question_service(
     question_repo: QuestionRepository = Depends(get_question_repository),
     form_repo: FormRepository = Depends(get_form_repository),

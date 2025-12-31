@@ -88,6 +88,41 @@ class QuestionRepository:
         )
 
         return question
+    async def get_by_id_and_survey(
+        self,
+        question_id: UUID,
+        survey_id: UUID
+    ):
+        stmt = select(Question).where(
+            Question.question_id == question_id,
+            Question.survey_id == survey_id
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def delete(self, question: Question):
+        await self.session.delete(question)
+
+
+    async def list_by_survey_id(
+      self,
+      survey_id: UUID,
+    ) ->  list[Question]:
+
+     stmt = (
+        select(Question)
+        .where(Question.survey_id == survey_id)
+        .order_by(Question.order_index.asc())
+     )
+
+     result = await self.session.execute(stmt)
+     return result.scalars().all()
+
+
+        
+        
+
+    
 
 
 # ---------------------------------------

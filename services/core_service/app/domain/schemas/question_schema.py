@@ -21,3 +21,26 @@ class QuestionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DeleteQuestionResponse(BaseModel):
+    success: bool
+    message: str
+    question_id: UUID
+
+
+class QuestionListItemSchema(BaseModel):
+    question_id: UUID
+    question_text: str        # متن سوال
+    is_required: bool
+    type: str                 # text
+
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+
+class QuestionListResponse(BaseModel):
+    items: list[QuestionListItemSchema]
+
