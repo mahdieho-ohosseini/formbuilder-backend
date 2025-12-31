@@ -117,6 +117,16 @@ class QuestionRepository:
 
      result = await self.session.execute(stmt)
      return result.scalars().all()
+    
+
+    async def get_by_id(self, question_id: UUID) -> Question | None:
+        result = await self.session.execute(
+            select(Question).where(
+                Question.question_id == question_id,
+            )
+        )
+        return result.scalar_one_or_none()  
+    
 
 
         

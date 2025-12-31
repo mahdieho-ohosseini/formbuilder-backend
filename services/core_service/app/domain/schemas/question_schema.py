@@ -44,3 +44,9 @@ class QuestionListItemSchema(BaseModel):
 class QuestionListResponse(BaseModel):
     items: list[QuestionListItemSchema]
 
+
+class QuestionUpdateSchema(BaseModel):
+    question_text: Optional[str] = Field(None, min_length=1)
+    description: Optional[str] = None
+    is_required: Optional[bool] = None
+

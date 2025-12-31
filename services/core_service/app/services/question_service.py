@@ -15,6 +15,7 @@ from app.domain.schemas.question_schema import (
     DeleteQuestionResponse,
     QuestionListItemSchema,
     QuestionListResponse,
+    QuestionUpdateSchema,
 )
 
 
@@ -147,7 +148,42 @@ class QuestionService:
             success=True,
             message="Question deleted successfully",
             question_id=question_id,
+        ) 
+    # =========================================================
+    # UPDATE — Update Question
+    # ========================================================= 
+    async def update_question(
+        self,
+        survey_id: UUID,
+        question_id: UUID,
+        user_id: UUID,
+        data: QuestionUpdateSchema,
+    ):
+        # ✅ چک مالکیت فرم
+        await self.form_repo.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
         )
+
+        # ✅ گرفتن سؤال
+        question = await self.question_repo.get_by_id(question_id)
+        if not question or question.survey_id != survey_id:
+            raise HTTPException(status_code=404, detail="Question not found")
+
+        # ✅ آپدیت فیلدها (فقط اون‌هایی که فرستاده شده)
+        if data.question_text is not None:
+            question.question_text = data.question_text
+
+        if data.description is not None:
+            question.description = data.description
+
+        if data.is_required is not None:
+            question.is_required = data.is_required
+
+        await self.question_repo.session.commit()
+        await self.question_repo.session.refresh(question)
+
+        return question
 
 
 # =========================================================

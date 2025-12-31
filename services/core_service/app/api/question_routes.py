@@ -6,14 +6,15 @@ from app.domain.schemas.question_schema import (
     CreateTextQuestionRequest,
     DeleteQuestionResponse,
     QuestionListResponse,
-    QuestionResponse
+    QuestionResponse,
+    QuestionUpdateSchema
 )
 from app.services.question_service import QuestionService, get_question_service
 
 router = APIRouter(prefix="/forms", tags=["Questions"])
 
 @router.post(
-    "/{survey_id}/add_question",
+    "/{survey_id}/questions",
     response_model=QuestionResponse,
     status_code=201
 )
@@ -67,6 +68,26 @@ async def list_questions(
     return await service.list_questions(
         survey_id=survey_id,
         user_id=user_id
+    )
+
+@router.patch(
+    "/{survey_id}/questions/{question_id}",
+    summary="Edit a question"
+)
+async def update_question(
+    survey_id: UUID,
+    question_id: UUID,
+    data: QuestionUpdateSchema,
+    request: Request,
+    service: QuestionService = Depends(get_question_service),
+):
+    user_id: UUID = request.state.user_id
+
+    return await service.update_question(
+        survey_id=survey_id,
+        question_id=question_id,
+        user_id=user_id,
+        data=data,
     )
 
     
