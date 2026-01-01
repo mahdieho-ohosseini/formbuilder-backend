@@ -7,7 +7,8 @@ from app.domain.schemas.form_schema import (
     CreateFormRequest,
     CreateFormResponse,
     DeleteFormResponse,
-    SeeFormsResponseSchema)
+    SeeFormsResponseSchema,
+    UpdateFormNameSchema)
 from app.services.form_service import FormService, get_form_service
 from app.repository.form_repository import get_form_repository, FormRepository
 
@@ -105,3 +106,20 @@ async def delete_form(
         survey_id=survey_id,
         user_id=user_id,
     )
+
+
+@router.patch("/{survey_id}/name")
+async def update_form_name(
+    survey_id: UUID,
+    data: UpdateFormNameSchema,
+    service: FormService = Depends(get_form_service),
+):
+    return await service.update_form_name(survey_id, data)
+
+
+@router.get("/{survey_id}")
+async def get_form(
+    survey_id: UUID,
+    service: FormService = Depends(get_form_service),
+):
+    return await service.get_form(survey_id)

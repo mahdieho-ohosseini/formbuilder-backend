@@ -92,7 +92,7 @@ class QuestionRepository:
         self,
         question_id: UUID,
         survey_id: UUID
-    ):
+) -> Question | None:
         stmt = select(Question).where(
             Question.question_id == question_id,
             Question.survey_id == survey_id

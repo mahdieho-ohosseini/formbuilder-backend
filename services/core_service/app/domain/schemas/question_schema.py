@@ -50,3 +50,19 @@ class QuestionUpdateSchema(BaseModel):
     description: Optional[str] = None
     is_required: Optional[bool] = None
 
+
+
+class QuestionDetailResponse(BaseModel):
+    question_id: UUID
+    survey_id: UUID
+    type: str
+
+    question_text: str
+    description: Optional[str]
+    is_required: bool
+
+    min_length: Optional[int] = None
+    max_length: Optional[int] = None
+
+    class Config:
+        from_attributes = True

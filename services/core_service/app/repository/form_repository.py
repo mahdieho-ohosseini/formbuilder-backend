@@ -87,7 +87,21 @@ class FormRepository:
 
     async def delete(self, form: Survey):
         await self.session.delete(form)
+        await self.session.commit()  
+
+
+    async def get_by_id(self, survey_id):
+        stmt = select(Survey).where(Survey.survey_id == survey_id)
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+
+
+    async def save(self, form):
+        self.session.add(form)
         await self.session.commit()
+        await self.session.refresh(form)
+        return form
 
 
  

@@ -5,6 +5,7 @@ from fastapi.params import Depends
 from app.domain.schemas.question_schema import (
     CreateTextQuestionRequest,
     DeleteQuestionResponse,
+    QuestionDetailResponse,
     QuestionListResponse,
     QuestionResponse,
     QuestionUpdateSchema
@@ -90,4 +91,23 @@ async def update_question(
         data=data,
     )
 
+
+@router.get(
+    "/{survey_id}/questions/{question_id}",
+    response_model=QuestionDetailResponse,
+    summary="Get question data for edit",
+)
+async def get_question_for_edit(
+    survey_id: UUID,
+    question_id: UUID,
+    request: Request,
+    service: QuestionService = Depends(get_question_service),
+):
+    user_id: UUID = request.state.user_id
+
+    return await service.get_question_for_edit(
+        survey_id=survey_id,
+        question_id=question_id,
+        user_id=user_id,
+    )
     

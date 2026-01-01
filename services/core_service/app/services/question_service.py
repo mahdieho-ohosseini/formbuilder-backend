@@ -110,6 +110,88 @@ class QuestionService:
         )
 
     # =========================================================
+    # READ — Get Question For Edit
+    # =========================================================
+    async def get_question_for_edit(
+        self,
+        *,
+        survey_id: UUID,
+        question_id: UUID,
+        user_id: UUID,
+    ):
+        # ✅ Ownership check
+        survey = await self.form_repo.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this form",
+            )
+
+        # ✅ Load question
+        question = await self.question_repo.get_by_id_and_survey(
+            question_id=question_id,
+            survey_id=survey_id,
+        )
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found",
+            )
+
+        return question
+
+    # =========================================================
+    # UPDATE — Update Question
+    # =========================================================
+    async def update_question(
+        self,
+        *,
+        survey_id: UUID,
+        question_id: UUID,
+        user_id: UUID,
+        data: QuestionUpdateSchema,
+    ):
+        # ✅ Ownership check
+        survey = await self.form_repo.get_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this form",
+            )
+
+        # ✅ Load question
+        question = await self.question_repo.get_by_id_and_survey(
+            question_id=question_id,
+            survey_id=survey_id,
+        )
+        if not question:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Question not found",
+            )
+
+        # ✅ Update only provided fields
+        if data.question_text is not None:
+            question.question_text = data.question_text
+
+        if data.description is not None:
+            question.description = data.description
+
+        if data.is_required is not None:
+            question.is_required = data.is_required
+
+        await self.question_repo.session.commit()
+        await self.question_repo.session.refresh(question)
+
+        return question
+
+    # =========================================================
     # DELETE — Delete Question
     # =========================================================
     async def delete_question(
@@ -130,7 +212,7 @@ class QuestionService:
                 detail="You do not have access to this form",
             )
 
-        # ✅ Check question exists
+        # ✅ Load question
         question = await self.question_repo.get_by_id_and_survey(
             question_id=question_id,
             survey_id=survey_id,
@@ -148,42 +230,7 @@ class QuestionService:
             success=True,
             message="Question deleted successfully",
             question_id=question_id,
-        ) 
-    # =========================================================
-    # UPDATE — Update Question
-    # ========================================================= 
-    async def update_question(
-        self,
-        survey_id: UUID,
-        question_id: UUID,
-        user_id: UUID,
-        data: QuestionUpdateSchema,
-    ):
-        # ✅ چک مالکیت فرم
-        await self.form_repo.get_owned_form(
-            survey_id=survey_id,
-            user_id=user_id,
         )
-
-        # ✅ گرفتن سؤال
-        question = await self.question_repo.get_by_id(question_id)
-        if not question or question.survey_id != survey_id:
-            raise HTTPException(status_code=404, detail="Question not found")
-
-        # ✅ آپدیت فیلدها (فقط اون‌هایی که فرستاده شده)
-        if data.question_text is not None:
-            question.question_text = data.question_text
-
-        if data.description is not None:
-            question.description = data.description
-
-        if data.is_required is not None:
-            question.is_required = data.is_required
-
-        await self.question_repo.session.commit()
-        await self.question_repo.session.refresh(question)
-
-        return question
 
 
 # =========================================================

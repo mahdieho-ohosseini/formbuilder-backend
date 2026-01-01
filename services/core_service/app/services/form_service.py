@@ -85,7 +85,34 @@ class FormService:
         return {
             "message": "Form deleted successfully",
             "survey_id": survey_id,
-        }
+        }    
+    
+
+    async def update_form_name(self, survey_id, data):
+        form = await self.repository.get_by_id(survey_id)
+
+        if not form:
+            raise HTTPException(status_code=404, detail="Form not found")
+
+        form.title = data.title
+
+        await self.repository.save(form)
+
+        return {
+            "message": "Form name updated successfully",
+            "title": form.title,
+        }  
+    
+    
+    async def get_form(self, survey_id):
+        form = await self.repository.get_by_id(survey_id)
+        if not form:
+            raise HTTPException(status_code=404)
+        return {
+           "survey_id": form.survey_id,
+           "title": form.title,
+    }
+
 
 
 

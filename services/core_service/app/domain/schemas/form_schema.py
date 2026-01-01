@@ -30,3 +30,7 @@ class SeeFormsResponseSchema(BaseModel):
 class DeleteFormResponse(BaseModel):
     message: str
     survey_id: UUID
+
+
+class UpdateFormNameSchema(BaseModel):
+    title: str = Field(..., min_length=1, max_length=255)
