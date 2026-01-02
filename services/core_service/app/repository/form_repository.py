@@ -3,6 +3,7 @@ from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from datetime import datetime
 
 from app.domain.models.servey_model import Survey
 from app.domain.models.settings_model import Setting
@@ -48,7 +49,8 @@ class FormRepository:
     
     async def get_forms_by_creator(self, creator_id: UUID):
         stmt = select(Survey).where(
-            Survey.creator_id == creator_id
+            Survey.creator_id == creator_id,
+            Survey.is_deleted == False
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
@@ -85,9 +87,19 @@ class FormRepository:
     
 
 
-    async def delete(self, form: Survey):
-        await self.session.delete(form)
+    async def soft_delete(self, form: Survey):
+        form.is_deleted = True
+        form.deleted_at = datetime.utcnow()
         await self.session.commit()  
+
+    async def list_deleted_forms(self, user_id: UUID):
+      stmt = select(Survey).where(
+        Survey.creator_id == user_id,
+        Survey.is_deleted.is_(True),
+    )
+      result = await self.session.execute(stmt)
+      return result.scalars().all()
+
 
 
     async def get_by_id(self, survey_id):
@@ -101,7 +113,37 @@ class FormRepository:
         self.session.add(form)
         await self.session.commit()
         await self.session.refresh(form)
-        return form
+        return form    
+    
+
+    async def get_deleted_forms(self, user_id: UUID):
+        stmt = (
+            select(Survey)
+            .where(
+                Survey.creator_id == user_id,
+                Survey.is_deleted == True
+            )
+            .order_by(Survey.deleted_at.desc())
+        )
+
+        result = await self.session.execute(stmt)
+        return result.scalars().all() 
+    
+    async def get_deleted_owned_form(
+       self,
+       survey_id: UUID,
+       user_id: UUID,
+       ):   
+       result = await self.session.execute(
+           select(Survey).where(
+               Survey.survey_id == survey_id,
+               Survey.creator_id == user_id,
+               Survey.is_deleted.is_(True),
+           )
+       )
+       return result.scalar_one_or_none()
+       
+    
 
 
  

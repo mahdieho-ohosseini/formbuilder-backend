@@ -66,7 +66,7 @@ class FormService:
     
 
 
-    async def delete_form(self, survey_id: UUID, user_id: UUID):
+    async def soft_delete_form(self, survey_id: UUID, user_id: UUID):
         # 1️⃣ چک مالکیت
         form = await self.repository.get_owned_form(
             survey_id=survey_id,
@@ -80,7 +80,7 @@ class FormService:
             )
 
         # 2️⃣ حذف
-        await self.repository.delete(form)
+        await self.repository.soft_delete(form)
 
         return {
             "message": "Form deleted successfully",
@@ -101,7 +101,29 @@ class FormService:
         return {
             "message": "Form name updated successfully",
             "title": form.title,
-        }  
+        } 
+    async def restore_form(self, survey_id: UUID, user_id: UUID):
+        # 1️⃣ چک مالکیت
+        form = await self.repository.get_deleted_owned_form(
+            survey_id=survey_id,
+            user_id=user_id,
+        )
+
+        if not form:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Form not found or access denied",
+            )
+
+        # 2️⃣ بازیابی
+        form.is_deleted = False
+        form.deleted_at = None
+        await self.repository.session.commit()
+
+        return {
+            "message": "Form restored successfully",
+            "survey_id": survey_id,
+        }
     
     
     async def get_form(self, survey_id):
@@ -112,6 +134,34 @@ class FormService:
            "survey_id": form.survey_id,
            "title": form.title,
     }
+    async def list_deleted_forms(self, user_id: UUID):
+        """
+        🗑️ Get all soft-deleted forms (Trash Bin)
+        """
+        return await self.repository.get_deleted_forms(user_id)  
+    
+    async def hard_delete_form(self, survey_id: UUID, user_id: UUID):
+      form = await self.repository.get_deleted_owned_form(
+        survey_id=survey_id,
+        user_id=user_id,
+     )
+
+      if not form:
+        raise HTTPException(
+            status_code=404,
+            detail="Deleted form not found or access denied",
+        )
+
+      await self.repository.session.delete(form)
+      await self.repository.session.commit()
+
+      return {
+        "message": "Form permanently deleted",
+        "survey_id": survey_id,
+    }
+
+    
+  
 
 
 

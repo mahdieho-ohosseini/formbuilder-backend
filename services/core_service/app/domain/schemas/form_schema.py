@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
@@ -27,10 +27,28 @@ class SeeFormsResponseSchema(BaseModel):
     class Config:
         from_attributes = True
 
-class DeleteFormResponse(BaseModel):
-    message: str
-    survey_id: UUID
 
 
 class UpdateFormNameSchema(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
+
+
+
+class DeletedFormItemSchema(BaseModel):
+    survey_id: UUID
+    title: str
+    deleted_at: Optional[datetime]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DeletedFormListResponse(BaseModel):
+    items: list[DeletedFormItemSchema]
+
+
+
+
+class SoftDeleteFormActionResponse(BaseModel):
+    success: bool = True
+    message: str
+    survey_id: UUID

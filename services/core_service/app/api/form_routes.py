@@ -6,7 +6,8 @@ from fastapi import Header
 from app.domain.schemas.form_schema import (
     CreateFormRequest,
     CreateFormResponse,
-    DeleteFormResponse,
+    DeletedFormListResponse,
+    SoftDeleteFormActionResponse,
     SeeFormsResponseSchema,
     UpdateFormNameSchema)
 from app.services.form_service import FormService, get_form_service
@@ -65,7 +66,6 @@ async def create_form(
         created_at=new_survey.created_at
     )
 
-
 @router.get(
     "/my",
     response_model=list[SeeFormsResponseSchema],
@@ -89,25 +89,130 @@ async def get_my_forms(
     service = FormService(repository=form_repository)
     return await service.get_my_forms(user_id)
 
-
-@router.delete(
-    "/{survey_id}",
-    response_model=DeleteFormResponse,
-    summary="Delete a form",
+# ======================================================
+# 🗑️ Trash Bin – Deleted Forms
+# GET /forms/trash
+# ======================================================
+@router.get(
+    "/trash",
+    response_model=DeletedFormListResponse,
 )
-async def delete_form(
-    survey_id: UUID,
+async def list_deleted_forms(
     request: Request,
-    service: FormService = Depends(get_form_service),
+    form_repository: FormRepository = Depends(get_form_repository),
 ):
-    user_id: UUID = request.state.user_id
+    user_id_str = request.state.user_id
 
-    return await service.delete_form(
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    service = FormService(repository=form_repository)
+
+    forms = await service.list_deleted_forms(user_id)
+    return DeletedFormListResponse(items=forms)
+
+# ======================================================
+# 🔄 Restore Form
+# PATCH /forms/{survey_id}/restore
+# ======================================================
+@router.patch(
+    "/{survey_id}/restore",
+    response_model=SoftDeleteFormActionResponse,
+)
+async def restore_form(
+    request: Request,
+    survey_id: UUID,
+    form_repository: FormRepository = Depends(get_form_repository),
+):
+    user_id_str = request.state.user_id
+
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    service = FormService(repository=form_repository)
+
+    return await service.restore_form(
+        survey_id=survey_id,
+        user_id=user_id,
+    )
+
+# ======================================================
+# ☠️ Hard Delete Form
+# DELETE /forms/{survey_id}/hard
+# ======================================================
+@router.delete(
+    "/{survey_id}/hard",
+    response_model=SoftDeleteFormActionResponse,
+)
+async def hard_delete_form(
+    request: Request,
+    survey_id: UUID,
+    form_repository: FormRepository = Depends(get_form_repository),
+):
+    user_id_str = request.state.user_id
+
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    service = FormService(repository=form_repository)
+
+    return await service.hard_delete_form(
         survey_id=survey_id,
         user_id=user_id,
     )
 
 
+
+# ======================================================
+# ❌ Soft Delete Form
+# DELETE /forms/{survey_id}
+# ======================================================
+@router.delete(
+    "/{survey_id}",
+    response_model=SoftDeleteFormActionResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def delete_form(
+    request: Request,
+    survey_id: UUID,
+    form_repository: FormRepository = Depends(get_form_repository),
+):
+    user_id_str = request.state.user_id
+
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user ID")
+
+    service = FormService(repository=form_repository)
+
+    return await service.soft_delete_form(
+        survey_id=survey_id,
+        user_id=user_id,
+    )
+
+# ======================================================
+# ✏️ Update Name
+# PATCH /forms/{survey_id}/name
+# ======================================================
 @router.patch("/{survey_id}/name")
 async def update_form_name(
     survey_id: UUID,
@@ -117,6 +222,10 @@ async def update_form_name(
     return await service.update_form_name(survey_id, data)
 
 
+# ======================================================
+# 📄 Get Form (LAST)
+# GET /forms/{survey_id}
+# ======================================================
 @router.get("/{survey_id}")
 async def get_form(
     survey_id: UUID,
