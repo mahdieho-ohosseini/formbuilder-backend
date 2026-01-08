@@ -8,7 +8,8 @@ from loguru import logger
 
 from app.api.form_routes import router as forms_router
 from app.api.question_routes import router as question__router
-
+from app.api.setting_routes import router as setting_router
+from app.api.send_public_link_routes import router as url_router
 from app.core.config import get_settings
 from app.core.database import create_db_and_tables
 from app.logging.logging_service import configure_logger
@@ -121,6 +122,13 @@ logger.info("Forms router mounted at /api/v1")
 
 app.include_router(question__router, prefix="/api/v1")
 logger.info("questions router mounted at /api/v1")
+
+app.include_router(setting_router, prefix="/api/v1")
+logger.info("settings router mounted at /api/v1")
+
+app.include_router(url_router, prefix="/api/v1")
+logger.info("url router mounted at /api/v1")
+# ============================================
 # ============================================
 # 9. Health Check
 # ============================================
