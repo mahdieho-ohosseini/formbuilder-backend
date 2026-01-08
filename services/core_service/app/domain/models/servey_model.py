@@ -52,14 +52,19 @@ class Survey(EntityBase):
     cascade="all, delete-orphan"
 )
     
-__table_args__ = (
-    UniqueConstraint(
+    __table_args__ = (
+      UniqueConstraint(
         "creator_id",
         "title",
         name="uq_user_form_title"
     ),
 )
-
-
+    questions = relationship(
+        "Question",  # ← نام کلاس مدل (نه نام جدول!)
+        back_populates="survey",
+        cascade="all, delete-orphan",
+        order_by="Question.order_index",  # ← اسم مدل رو اینجا هم اصلاح کن
+        lazy="selectin"
+    )
 
     

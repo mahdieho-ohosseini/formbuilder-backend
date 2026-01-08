@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, status
 from uuid import UUID
 import secrets
@@ -70,6 +71,32 @@ class SurveyPublicLinkService:
         await self.repo.save_public_link(survey)
 
         return survey.public_code
+    
+    
+    async def open(self, code: str):
+        survey = await self.repo.get_by_public_code(code)
+
+        if not survey:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Survey not found or not public",
+            )
+
+        # ✅ اگر settings داری
+        settings = survey.settings
+        if settings:
+            now = datetime.now(timezone.utc)
+
+
+           
+            if settings.start_date and now < settings.start_date:
+                raise HTTPException(403, "Survey has not started yet")
+
+            if settings.end_date and now > settings.end_date:
+                raise HTTPException(403, "Survey has ended")
+
+        return survey
+    
 
 
 def get_survey_public_link_service(

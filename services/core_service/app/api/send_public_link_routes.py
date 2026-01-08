@@ -57,5 +57,4 @@ async def open_public_survey(
     code: str,
     service: SurveyPublicLinkService = Depends(get_survey_public_link_service),
 ):
-    return await service.load_public_survey(code)
-
+    return await service.open(code)

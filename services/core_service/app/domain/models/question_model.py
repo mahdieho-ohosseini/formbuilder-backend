@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.core.base import EntityBase
 import uuid
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 class Question(EntityBase):
     __tablename__ = "questions"
@@ -22,10 +23,16 @@ class Question(EntityBase):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
-__table_args__ = (
-    UniqueConstraint(
-        "survey_id",
-        "question_text",
-        name="uq_survey_text_question"
-    ),
-)
+    survey = relationship(
+        "Survey",
+        back_populates="questions"  # ← همنام با relationship در Survey
+    )
+
+
+    __table_args__ = (
+        UniqueConstraint(
+            "survey_id",
+            "question_text",
+            name="uq_survey_text_question"
+        ),
+    )
