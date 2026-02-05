@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from loguru import logger
 
 from app.api.form_routes import router as forms_router
-from app.api.question_routes import router as question__router
+from app.api.question_routes import router as question_router
 from app.api.setting_routes import router as setting_router
 from app.api.send_public_link_routes import router as url_router
 from app.core.config import get_settings
@@ -32,9 +32,8 @@ async def lifespan(app: FastAPI):
     await create_db_and_tables()
     yield
 
-
 # ============================================
-# 3. Create FastAPI App
+# 3. Create FastAPI App (ONLY ONCE)
 # ============================================
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -48,23 +47,25 @@ logger.info(
 )
 
 # ============================================
-# 4. CORS (MUST be before JWT middleware)
+# 4. CORS (MUST be first)
 # ============================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logger.info("CORS middleware configured.")
+logger.info("✅ CORS middleware configured")
 
 # ============================================
 # 5. JWT Middleware
 # ============================================
 app.middleware("http")(jwt_middleware)
-logger.info("JWT middleware attached.")
+logger.info("✅ JWT middleware attached")
 
 # ============================================
 # 6. UTF‑8 Middleware
@@ -77,7 +78,7 @@ async def set_utf8_encoding(request: Request, call_next):
     return response
 
 # ============================================
-# 7. OpenAPI + Swagger JWT Configuration
+# 7. Swagger JWT Config
 # ============================================
 bearer_scheme = HTTPBearer(auto_error=True)
 
@@ -86,9 +87,9 @@ def custom_openapi():
         return app.openapi_schema
 
     openapi_schema = get_openapi(
-        title="QForm Core Service",
+        title=settings.PROJECT_NAME,
         version=settings.PROJECT_VERSION,
-        description="JWT-protected Core APIs for Form Management",
+        description="JWT-protected Core APIs",
         routes=app.routes,
     )
 
@@ -101,36 +102,23 @@ def custom_openapi():
         }
     }
 
-    # ✅ بسیار مهم — فعال‌سازی سراسری JWT در Swagger
-    openapi_schema["security"] = [
-        {"BearerAuth": []}
-    ]
-
+    openapi_schema["security"] = [{"BearerAuth": []}]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-
 app.openapi = custom_openapi
-logger.info("Custom OpenAPI schema configured with JWT support.")
+logger.info("✅ OpenAPI configured")
 
 # ============================================
 # 8. Routes
 # ============================================
 app.include_router(forms_router, prefix="/api/v1")
-logger.info("Forms router mounted at /api/v1")
-
-
-app.include_router(question__router, prefix="/api/v1")
-logger.info("questions router mounted at /api/v1")
-
+app.include_router(question_router, prefix="/api/v1")
 app.include_router(setting_router, prefix="/api/v1")
-logger.info("settings router mounted at /api/v1")
-
 app.include_router(url_router, prefix="/api/v1")
-logger.info("url router mounted at /api/v1")
+
 # ============================================
-# ============================================
-# 9. Health Check
+# 9. Health
 # ============================================
 @app.get("/", tags=["Health"])
 async def root():
@@ -141,7 +129,3 @@ async def root():
     }
 
 logger.success("🚀 QForm CORE Service started successfully!")
-print("JWT_SECRET_KEY repr:", repr(settings.JWT_SECRET_KEY))
-print("JWT_SECRET_KEY len :", len(settings.JWT_SECRET_KEY))
-print("JWT_ALGORITHM     :", settings.JWT_ALGORITHM)
-print("SETTINGS OBJECT ID:", id(settings))

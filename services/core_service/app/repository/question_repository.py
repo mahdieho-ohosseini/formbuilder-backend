@@ -127,6 +127,14 @@ class QuestionRepository:
         )
         return result.scalar_one_or_none()  
     
+    
+    async def count_by_survey_id(self, survey_id: UUID) -> int:
+        result = await self.session.execute(
+            select(func.count(Question.question_id))
+            .where(Question.survey_id == survey_id)
+        )
+        return result.scalar() or 0
+    
 
 
         

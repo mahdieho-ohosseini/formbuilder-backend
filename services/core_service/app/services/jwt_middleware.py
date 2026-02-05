@@ -11,11 +11,16 @@ settings = get_settings()
 
 async def jwt_middleware(request: Request, call_next):
     """
-    Middleware برای بررسی JWT در همه مسیرهای Protected
+    JWT Middleware for protected routes
     """
+
+    # ✅ 0. Allow CORS preflight
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     path = request.url.path
-    
-    # 1️⃣ مسیرهای Public
+
+    # ✅ 1. Public routes
     public_routes = (
         "/api/v1/auth",
         "/docs",
@@ -28,76 +33,53 @@ async def jwt_middleware(request: Request, call_next):
     if any(path.startswith(p) for p in public_routes):
         return await call_next(request)
 
-    # 2️⃣ Dev mode bypass
+    # ✅ 2. Dev mode bypass
     if os.getenv("DEV_MODE", "false").lower() == "true":
-        logger.warning("🚨 DEV_MODE is ON - Bypassing JWT check")
+        logger.warning("🚨 DEV_MODE enabled — JWT bypassed")
         request.state.user_id = "00000000-0000-0000-0000-000000000000"
         return await call_next(request)
 
-    # 3️⃣ بررسی Header
+    # ✅ 3. Authorization header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        logger.warning(f"❌ Missing token for {path}")
+        logger.warning(f"❌ Missing Authorization header for {path}")
         raise HTTPException(
-            status_code=401, 
-            detail="Missing or invalid Authorization header"
+            status_code=401,
+            detail="Missing or invalid Authorization header",
         )
 
-    token = auth_header.split(" ")[1]
+    token = auth_header.split(" ", 1)[1]
 
-    # 4️⃣ Decode و Verify
+    # ✅ 4. Decode & validate token
     try:
         payload = jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
         )
-        
-        # 5️⃣ بررسی نوع توکن
+
+        # ✅ 5. Token type
         if payload.get("type") != "access":
-            logger.warning(f"❌ Invalid token type: {payload.get('type')}")
             raise HTTPException(
                 status_code=401,
-                detail="Invalid token type. Expected 'access' token."
-            )
-        
-        # 6️⃣ استخراج user_id
-        user_id = payload.get("sub")
-        if not user_id:
-            logger.warning("❌ Token payload missing 'sub' field")
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token payload"
-            )
-        
-        # 7️⃣ ذخیره در request.state
-        request.state.user_id = user_id
-        logger.info(f"✅ User {user_id} authenticated for {path}")
-        
-    except HTTPException:
-        # اگه خودمون HTTPException انداختیم، بدون تغییر بفرستش بیرون
-        raise
-        
-    except Exception as e:
-        # همه خطاهای دیگه (از جمله JWT)
-        error_msg = str(e).lower()
-        logger.error(f"❌ JWT Error: {e}")
-        
-        if "expired" in error_msg:
-            raise HTTPException(
-                status_code=401,
-                detail="Token has expired"
-            )
-        elif "signature" in error_msg:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token signature"
-            )
-        else:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token"
+                detail="Invalid token type (access required)",
             )
 
-    # 8️⃣ ادامه درخواست
+        # ✅ 6. Extract user_id
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Token missing subject (sub)",
+            )
+
+        request.state.user_id = user_id
+        logger.info(f"✅ Authenticated user {user_id} for {path}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ JWT error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
     return await call_next(request)

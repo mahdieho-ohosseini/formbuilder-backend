@@ -23,7 +23,7 @@ class Survey(EntityBase):
     title = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False,index=True)
     public_code = Column(String(12), unique=True, nullable=True, index=True)
-    is_public = Column(Boolean, nullable=False,server_default=text("false"))
+    is_public = Column(Boolean, nullable=False,server_default=text("true"))
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -51,7 +51,6 @@ class Survey(EntityBase):
     uselist=False,
     cascade="all, delete-orphan"
 )
-    
     __table_args__ = (
       UniqueConstraint(
         "creator_id",

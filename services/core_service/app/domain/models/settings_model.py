@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import (
     Column, String, Boolean, TIMESTAMP, Integer,
-    ForeignKey, func
+    ForeignKey, func, text
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -48,6 +48,9 @@ class Setting(EntityBase):
         nullable=True,
         onupdate=func.now()
     )
+    is_active = Column(Boolean, nullable=False,server_default=text("false"))
+
+
 
     # Optional: ارتباط با مدل Survey
     survey = relationship("Survey", back_populates="settings", uselist=False)
