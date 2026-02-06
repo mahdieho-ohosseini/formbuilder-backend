@@ -10,6 +10,8 @@ from app.api.form_routes import router as forms_router
 from app.api.question_routes import router as question_router
 from app.api.setting_routes import router as setting_router
 from app.api.send_public_link_routes import router as url_router
+from app.api.public_response_routes import router as public_response
+
 from app.core.config import get_settings
 from app.core.database import create_db_and_tables
 from app.logging.logging_service import configure_logger
@@ -116,6 +118,7 @@ app.include_router(forms_router, prefix="/api/v1")
 app.include_router(question_router, prefix="/api/v1")
 app.include_router(setting_router, prefix="/api/v1")
 app.include_router(url_router, prefix="/api/v1")
+app.include_router(public_response, prefix="/api/v1")
 
 # ============================================
 # 9. Health

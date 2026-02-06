@@ -142,6 +142,17 @@ class FormRepository:
            )
        )
        return result.scalar_one_or_none()
+    async def get_by_public_code(self, code: str) -> Survey | None:
+      stmt = select(Survey).where(
+        Survey.public_code == code,
+        Survey.is_deleted == False,
+        Survey.is_public == True,
+    )
+      result = await self.session.execute(stmt)
+      return result.scalar_one_or_none()
+
+       
+       
        
     
 

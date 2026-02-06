@@ -66,4 +66,9 @@ class Survey(EntityBase):
         lazy="selectin"
     )
 
+    responses = relationship(
+        "Response",
+        back_populates="survey",
+        cascade="all, delete-orphan",
+    )
     
