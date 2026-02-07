@@ -16,6 +16,7 @@ class SettingBase(BaseModel):
     show_prev_button: bool = True
     show_next_button: bool = True
     auto_advance: bool = False
+    is_active :bool =False
 
 
 class SettingUpdateSchema(SettingBase):

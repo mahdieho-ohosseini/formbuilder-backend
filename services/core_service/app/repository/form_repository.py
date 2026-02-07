@@ -2,12 +2,11 @@ from sqlalchemy import select
 from uuid import UUID
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from datetime import datetime
 
 from app.domain.models.servey_model import Survey
 from app.domain.models.settings_model import Setting
-from app.domain.models.question_model import Question
 from app.core.database import get_db
 
 
@@ -54,8 +53,6 @@ class FormRepository:
         )
         result = await self.session.execute(stmt)
         return result.scalars().all()
-    
-
 
     async def get_owned_form(self, survey_id, user_id):
         stmt = (
@@ -70,7 +67,6 @@ class FormRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
     
-    
     async def get_by_creator_and_title(
        self,
        creator_id: UUID,
@@ -84,8 +80,6 @@ class FormRepository:
 
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
-    
-
 
     async def soft_delete(self, form: Survey):
         form.is_deleted = True
@@ -100,14 +94,10 @@ class FormRepository:
       result = await self.session.execute(stmt)
       return result.scalars().all()
 
-
-
     async def get_by_id(self, survey_id):
         stmt = select(Survey).where(Survey.survey_id == survey_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
-
-
 
     async def save(self, form):
         self.session.add(form)
@@ -115,7 +105,6 @@ class FormRepository:
         await self.session.refresh(form)
         return form    
     
-
     async def get_deleted_forms(self, user_id: UUID):
         stmt = (
             select(Survey)
@@ -142,6 +131,7 @@ class FormRepository:
            )
        )
        return result.scalar_one_or_none()
+    
     async def get_by_public_code(self, code: str) -> Survey | None:
       stmt = select(Survey).where(
         Survey.public_code == code,
@@ -150,14 +140,7 @@ class FormRepository:
     )
       result = await self.session.execute(stmt)
       return result.scalar_one_or_none()
-
-       
-       
-       
-    
-
-
- 
+  
 
 
 # ---------------------------------------

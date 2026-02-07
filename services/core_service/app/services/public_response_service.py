@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.repository.response_repository import ResponseRepository
 from app.repository.form_repository import FormRepository
@@ -24,13 +24,13 @@ class PublicResponseService:
     async def submit_response(
         self,
         *,
-        access_code_used: str,
+        code: str,  # ✅ تغییر نام به short_url
         payload,
         ip_address: str,
         user_agent: str | None,
     ):
-        # ✅ Load form
-        form = await self.form_repo.get_by_public_code(access_code_used)
+        # ✅ Load form by short URL
+        form = await self.form_repo.get_by_public_code(code)
         if not form:
             raise HTTPException(404, "Form not found")
 
@@ -39,19 +39,30 @@ class PublicResponseService:
         if not setting or not setting.is_active:
             raise HTTPException(403, "Form is not active")
 
-        now = datetime.utcnow()
-        if setting.start_date and now < setting.start_date:
-            raise HTTPException(403, "Form not started")
-        if setting.end_date and now > setting.end_date:
-            raise HTTPException(403, "Form expired")
+        # ✅ Date validation
+        now = datetime.now(timezone.utc)
+        
+        if setting.start_date:
+            start_aware = setting.start_date
+            if start_aware.tzinfo is None:
+                start_aware = start_aware.replace(tzinfo=timezone.utc)
+            
+            if now < start_aware:
+                raise HTTPException(400, "Form has not started yet")
+        
+        if setting.end_date:
+            end_aware = setting.end_date
+            if end_aware.tzinfo is None:
+                end_aware = end_aware.replace(tzinfo=timezone.utc)
+            
+            if now > end_aware:
+                raise HTTPException(400, "Form has expired")
 
         # ✅ Create response session
         response = await self.response_repo.create_response(
             survey_id=form.survey_id,
             ip_address=ip_address,
             user_agent=user_agent,
-            access_code_used=access_code_used,
-
         )
 
         # ✅ Validate & save answers
@@ -67,7 +78,6 @@ class PublicResponseService:
                 )
             value = (ans.text_value or "").strip()
             if question.is_required and not value:
-
                 raise HTTPException(
                     status_code=400,
                     detail=f"Question {question.question_id} is required",

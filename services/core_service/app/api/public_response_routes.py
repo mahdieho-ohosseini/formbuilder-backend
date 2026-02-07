@@ -33,7 +33,7 @@ async def submit_response(
     )
 
     response = await service.submit_response(
-        access_code_used=code,
+        code=code,
         payload=payload,
         ip_address=request.client.host,
         user_agent=request.headers.get("user-agent"),

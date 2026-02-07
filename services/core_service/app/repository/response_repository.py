@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone  # ✅ timezone رو import کن
 
 from app.domain.models.response_model import Response
 from app.domain.models.answer_model import AnswerText
@@ -24,6 +24,9 @@ class ResponseRepository:
             survey_id=survey_id,
             ip_address=ip_address,
             user_agent=user_agent,
+            is_complete=False,
+            answers_count=0,
+
         )
         self.session.add(response)
         await self.session.flush()
@@ -54,5 +57,5 @@ class ResponseRepository:
         answers_count: int,
     ):
         response.is_complete = True
-        response.submitted_at = datetime.utcnow()
+        response.submitted_at = datetime.now(timezone.utc)  # ✅ aware!
         response.answers_count = answers_count
