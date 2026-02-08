@@ -1,7 +1,10 @@
 from fastapi import HTTPException, status
 from uuid import UUID
 from datetime import datetime, timezone
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import get_db
 from app.repository.response_repository import ResponseRepository
 from app.repository.form_repository import FormRepository
 from app.repository.question_repository import QuestionRepository
@@ -98,3 +101,39 @@ class PublicResponseService:
         await self.response_repo.session.commit()
 
         return response
+    async def list_responses(
+        self,
+        survey_id: UUID,
+        owner_id: UUID,
+    ):
+        survey = await self.form_repo.get_by_id(survey_id)
+        if not survey or survey.creator_id != owner_id:
+            raise HTTPException(403, "Access denied")
+
+        return await self.response_repo.list_by_survey_id(survey_id)
+
+    async def get_response_detail(
+        self,
+        survey_id: UUID,
+        response_id: UUID,
+        owner_id: UUID,
+    ):
+        survey = await self.form_repo.get_by_id(survey_id)
+        if not survey or survey.creator_id != owner_id:
+            raise HTTPException(403, "Access denied")
+
+        response = await self.response_repo.get_response_detail(response_id)
+        if not response or response.survey_id != survey_id:
+            raise HTTPException(404, "Response not found")
+
+        return response
+    
+async def get_public_response_service(
+    db: AsyncSession = Depends(get_db),
+) -> PublicResponseService:
+    return PublicResponseService(
+        response_repo=ResponseRepository(db),
+        form_repo=FormRepository(db),
+        question_repo=QuestionRepository(db),
+        setting_repo=SettingRepository(db),
+    )

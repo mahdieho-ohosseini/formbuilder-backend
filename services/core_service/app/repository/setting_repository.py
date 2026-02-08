@@ -26,7 +26,6 @@ class SettingRepository:
 
     async def update_partial(self, setting: Setting, data: dict) -> Setting:
         for key, value in data.items():
-            if value is not None:
                 setattr(setting, key, value)
 
         await self.session.commit()

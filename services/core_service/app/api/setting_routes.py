@@ -71,7 +71,7 @@ async def update_survey_settings(
         updated_settings = await service.update_settings(
             survey_id=survey_id,
             user_id=user_id,
-            data=data.model_dump(exclude_unset=True),
+            data=data.model_dump(exclude_unset=False),
         )
         return updated_settings
 
